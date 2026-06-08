@@ -1,12 +1,19 @@
-export default function CitasPage() {
+import { getStaff } from "@/lib/staff-actions";
+import { getAppointments } from "@/lib/appointments-actions";
+import CitasTable from "@/components/CitasTable";
+
+export default async function CitasPage() {
+  const [appointments, gerentes, tatuadores] = await Promise.all([
+    getAppointments(),
+    getStaff("gerente"),
+    getStaff("tatuador"),
+  ]);
+
   return (
-    <>
-      <h2 className="h4 mb-4">Citas</h2>
-      <div className="card">
-        <div className="card-body">
-          <p className="card-text text-muted">Gestión de citas — próximamente.</p>
-        </div>
-      </div>
-    </>
+    <CitasTable
+      appointments={appointments}
+      gerentes={gerentes}
+      tatuadores={tatuadores}
+    />
   );
 }
