@@ -9,6 +9,7 @@ export type StaffMember = {
   nickname: string;
   bank: string;
   account_number: string;
+  cash_only: boolean;
   role: "gerente" | "jalador" | "tatuador";
 };
 
@@ -30,6 +31,7 @@ export async function createStaff(formData: FormData) {
     p_nickname: formData.get("nickname") as string,
     p_bank: formData.get("bank") as string,
     p_account_number: formData.get("account_number") as string,
+    p_cash_only: formData.get("cash_only") === "on",
     p_role: formData.get("role") as StaffMember["role"],
   });
 
@@ -48,6 +50,7 @@ export async function updateStaff(formData: FormData) {
     p_nickname: formData.get("nickname") as string,
     p_bank: formData.get("bank") as string,
     p_account_number: formData.get("account_number") as string,
+    p_cash_only: formData.get("cash_only") === "on",
     p_role: formData.get("role") as StaffMember["role"],
   });
 

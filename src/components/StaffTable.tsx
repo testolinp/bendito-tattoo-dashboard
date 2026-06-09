@@ -64,13 +64,14 @@ export default function StaffTable({ staff, role, title }: Props) {
                 <th>Apodo</th>
                 <th>Banco</th>
                 <th>Número de cuenta</th>
+                <th>Pago</th>
                 <th style={{ width: 140 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {staff.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="text-center text-muted py-4">
+                  <td colSpan={6} className="text-center text-muted py-4">
                     No hay registros
                   </td>
                 </tr>
@@ -81,6 +82,7 @@ export default function StaffTable({ staff, role, title }: Props) {
                   <td>{member.nickname}</td>
                   <td>{member.bank}</td>
                   <td>{member.account_number}</td>
+                  <td>{member.cash_only ? <span className="badge bg-success">Solo efectivo</span> : ""}</td>
                   <td>
                     <button
                       className="btn btn-sm btn-outline-secondary me-1"
@@ -160,8 +162,19 @@ export default function StaffTable({ staff, role, title }: Props) {
                       type="text"
                       className="form-control"
                       defaultValue={editing?.account_number ?? ""}
-                      required
                     />
+                  </div>
+                  <div className="mb-3 form-check">
+                    <input
+                      name="cash_only"
+                      type="checkbox"
+                      className="form-check-input"
+                      id="cashOnly"
+                      defaultChecked={editing?.cash_only ?? false}
+                    />
+                    <label className="form-check-label" htmlFor="cashOnly">
+                      Pago solo en efectivo
+                    </label>
                   </div>
                 </div>
                 <div className="modal-footer">
