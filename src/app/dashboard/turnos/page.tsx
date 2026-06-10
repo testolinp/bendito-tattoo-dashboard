@@ -1,12 +1,21 @@
-export default function TurnosPage() {
+import { getStaff } from "@/lib/staff-actions";
+import { getTurnos } from "@/lib/turnos-actions";
+import TurnosTable from "@/components/TurnosTable";
+
+export default async function TurnosPage() {
+  const [turnos, gerentes, tatuadores, jaladores] = await Promise.all([
+    getTurnos(),
+    getStaff("gerente"),
+    getStaff("tatuador"),
+    getStaff("jalador"),
+  ]);
+
   return (
-    <>
-      <h2 className="h4 mb-4">Turnos</h2>
-      <div className="card">
-        <div className="card-body">
-          <p className="card-text text-muted">Gestión de turnos — próximamente.</p>
-        </div>
-      </div>
-    </>
+    <TurnosTable
+      turnos={turnos}
+      gerentes={gerentes}
+      tatuadores={tatuadores}
+      jaladores={jaladores}
+    />
   );
 }
