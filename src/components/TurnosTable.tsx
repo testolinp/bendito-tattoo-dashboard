@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   createTurno,
   updateTurno,
@@ -13,6 +13,7 @@ type Props = {
   gerentes: StaffMember[];
   tatuadores: StaffMember[];
   jaladores: StaffMember[];
+  editTurnoId?: number | null;
 };
 
 const formatDateTime = (d: string) => {
@@ -34,10 +35,20 @@ const toDateTimeLocal = (d: string) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
-export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores }: Props) {
+export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores, editTurnoId }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Turno | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (editTurnoId) {
+      const turno = turnos.find((t) => t.id === editTurnoId);
+      if (turno) {
+        setEditing(turno);
+        setModalOpen(true);
+      }
+    }
+  }, [editTurnoId, turnos]);
 
   const openCreate = () => {
     setEditing(null);

@@ -226,14 +226,15 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION complete_appointment(p_id bigint)
-RETURNS void
+RETURNS bigint
 LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 DECLARE
   v_appointment appointments%ROWTYPE;
+  v_turno_id bigint;
 BEGIN
   SELECT * INTO v_appointment FROM appointments WHERE id = p_id;
-  IF NOT FOUND THEN RETURN; END IF;
+  IF NOT FOUND THEN RETURN NULL; END IF;
 
   UPDATE appointments SET status = 'concretada', updated_at = now() WHERE id = p_id;
 
@@ -247,7 +248,10 @@ BEGIN
     v_appointment.cotizacion, v_appointment.moneda,
     v_appointment.deposito_pesos, v_appointment.deposito_usd, v_appointment.deposito_euros,
     v_appointment.forma_pago, v_appointment.fecha_cita
-  );
+  )
+  RETURNING id INTO v_turno_id;
+
+  RETURN v_turno_id;
 END;
 $$;
 
@@ -362,14 +366,15 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION complete_appointment(p_id bigint)
-RETURNS void
+RETURNS bigint
 LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 DECLARE
   v_appointment appointments%ROWTYPE;
+  v_turno_id bigint;
 BEGIN
   SELECT * INTO v_appointment FROM appointments WHERE id = p_id;
-  IF NOT FOUND THEN RETURN; END IF;
+  IF NOT FOUND THEN RETURN NULL; END IF;
 
   UPDATE appointments SET status = 'concretada', updated_at = now() WHERE id = p_id;
 
@@ -383,7 +388,10 @@ BEGIN
     v_appointment.cotizacion, v_appointment.moneda,
     v_appointment.deposito_pesos, v_appointment.deposito_usd, v_appointment.deposito_euros,
     v_appointment.forma_pago, v_appointment.fecha_cita
-  );
+  )
+  RETURNING id INTO v_turno_id;
+
+  RETURN v_turno_id;
 END;
 $$;
 

@@ -85,10 +85,11 @@ export async function cancelAppointment(id: number) {
 
 export async function completeAppointment(id: number) {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("complete_appointment", {
+  const { data, error } = await supabase.rpc("complete_appointment", {
     p_id: id,
   });
 
   if (error) return { error: error.message };
   revalidatePath("/dashboard/citas");
+  return { turnoId: data as number };
 }

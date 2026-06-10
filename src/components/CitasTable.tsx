@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   createAppointment,
   updateAppointment,
@@ -70,10 +71,16 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
     if (result?.error) alert(result.error);
   };
 
+  const router = useRouter();
+
   const handleComplete = async (id: number) => {
     if (!confirm("¿Concretar esta cita?")) return;
     const result = await completeAppointment(id);
-    if (result?.error) alert(result.error);
+    if (result?.error) {
+      alert(result.error);
+    } else {
+      router.push(`/dashboard/turnos?editTurnoId=${result.turnoId}`);
+    }
   };
 
   const formatDateTime = (d: string) => {
