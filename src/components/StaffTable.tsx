@@ -63,7 +63,7 @@ export default function StaffTable({ staff, role, title }: Props) {
                 <th>Nombre</th>
                 <th>Apodo</th>
                 <th>Banco</th>
-                <th>Número de cuenta</th>
+                <th>Clabe</th>
                 <th>Pago</th>
                 <th style={{ width: 140 }}>Acciones</th>
               </tr>
@@ -82,7 +82,13 @@ export default function StaffTable({ staff, role, title }: Props) {
                   <td>{member.nickname}</td>
                   <td>{member.bank}</td>
                   <td>{member.account_number}</td>
-                  <td>{member.cash_only ? <span className="badge bg-success">Solo efectivo</span> : ""}</td>
+                  <td>
+                    {member.cash_only ? (
+                      <span className="badge bg-success">Solo efectivo</span>
+                    ) : (
+                      ""
+                    )}
+                  </td>
                   <td>
                     <button
                       className="btn btn-sm btn-outline-secondary me-1"
@@ -113,9 +119,7 @@ export default function StaffTable({ staff, role, title }: Props) {
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">
-                  {editing ? "Editar" : "Nuevo"} {title.slice(0, -1)}
-                </h5>
+                <h5 className="modal-title">{editing ? "Editar" : "Nuevo"}</h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -156,7 +160,7 @@ export default function StaffTable({ staff, role, title }: Props) {
                     />
                   </div>
                   <div className="mb-3">
-                    <label className="form-label">Número de cuenta</label>
+                    <label className="form-label">Clabe</label>
                     <input
                       name="account_number"
                       type="text"

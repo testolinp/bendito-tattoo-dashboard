@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import {
   createTurno,
   updateTurno,
@@ -36,9 +37,16 @@ const toDateTimeLocal = (d: string) => {
 };
 
 export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores, editTurnoId }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Turno | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const closeModal = () => {
+    setModalOpen(false);
+    if (editTurnoId) router.replace(pathname);
+  };
 
   useEffect(() => {
     if (editTurnoId) {
@@ -76,7 +84,7 @@ export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores, e
     if (result?.error) {
       alert(result.error);
     } else {
-      setModalOpen(false);
+      closeModal();
     }
   }
 
@@ -104,7 +112,7 @@ export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores, e
                 <button
                   type="button"
                   className="btn-close"
-                  onClick={() => setModalOpen(false)}
+                  onClick={closeModal}
                 />
               </div>
               <form onSubmit={handleSubmit}>
@@ -273,7 +281,7 @@ export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores, e
                   <button
                     type="button"
                     className="btn btn-secondary"
-                    onClick={() => setModalOpen(false)}
+                    onClick={closeModal}
                   >
                     Cancelar
                   </button>

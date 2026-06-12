@@ -11,6 +11,8 @@ import {
 import type { Appointment } from "@/lib/appointments-actions";
 import type { StaffMember } from "@/lib/staff-actions";
 
+const PAGE_SIZE = 10;
+
 type Props = {
   appointments: Appointment[];
   gerentes: StaffMember[];
@@ -30,10 +32,31 @@ const statusColors: Record<string, string> = {
   cancelada: "bg-danger",
 };
 
+function Pagination({ page, total, onChange }: { page: number; total: number; onChange: (p: number) => void }) {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (totalPages <= 1) return null;
+  return (
+    <div className="d-flex justify-content-center gap-1 py-2">
+      <button className="btn btn-sm btn-outline-secondary" disabled={page <= 0} onClick={() => onChange(page - 1)}>◀</button>
+      {Array.from({ length: totalPages }, (_, i) => (
+        <button key={i} className={`btn btn-sm ${i === page ? "btn-dark" : "btn-outline-secondary"}`} onClick={() => onChange(i)}>
+          {i + 1}
+        </button>
+      ))}
+      <button className="btn btn-sm btn-outline-secondary" disabled={page >= totalPages - 1} onClick={() => onChange(page + 1)}>▶</button>
+    </div>
+  );
+}
+
 export default function CitasTable({ appointments, gerentes, tatuadores, jaladores }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [pendingPage, setPendingPage] = useState(0);
+  const [historyPage, setHistoryPage] = useState(0);
+
+  const pending = appointments.filter((a) => a.status === "pendiente");
+  const history = appointments.filter((a) => a.status === "concretada" || a.status === "cancelada");
 
   const openCreate = () => {
     setEditing(null);
@@ -102,214 +125,16 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
   };
 
-  return (
-    <>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2 className="h4 mb-0">Citas</h2>
-        <button className="btn btn-dark" onClick={openCreate}>
-          + Nueva cita
-        </button>
-      </div>
+  function renderTable(title: string, list: Appointment[], page: number, setPage: (p: number) => void, showActions: boolean) {
+    const start = page * PAGE_SIZE;
+    const slice = list.slice(start, start + PAGE_SIZE);
 
-      {modalOpen && (
-        <div
-          className="modal d-block"
-          tabIndex={-1}
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
-          <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  {editing ? "Editar cita" : "Nueva cita"}
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setModalOpen(false)}
-                />
-              </div>
-              <form onSubmit={handleSubmit}>
-                <div className="modal-body">
-                  {editing && (
-                    <input type="hidden" name="id" value={editing.id} />
-                  )}
-                  <div className="row g-3">
-                    <div className="col-md-6">
-                      <label className="form-label">Nombre</label>
-                      <input
-                        name="name"
-                        type="text"
-                        className="form-control"
-                        defaultValue={editing?.name ?? ""}
-                        required
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Gerente</label>
-                      <select
-                        name="gerente_id"
-                        className="form-select"
-                        defaultValue={editing?.gerente_id ?? ""}
-                        required
-                      >
-                        <option value="">Seleccionar</option>
-                        {gerentes.map((g) => (
-                          <option key={g.id} value={g.id}>
-                            {g.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Tatuador</label>
-                      <select
-                        name="tatuador_id"
-                        className="form-select"
-                        defaultValue={editing?.tatuador_id ?? ""}
-                        required
-                      >
-                        <option value="">Seleccionar</option>
-                        {tatuadores.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Jalador</label>
-                      <select
-                        name="jalador_id"
-                        className="form-select"
-                        defaultValue={editing?.jalador_id ?? ""}
-                        required
-                      >
-                        <option value="">Seleccionar</option>
-                        {jaladores.map((j) => (
-                          <option key={j.id} value={j.id}>
-                            {j.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Cotización</label>
-                      <div className="input-group">
-                        <input
-                          name="cotizacion"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="form-control"
-                          defaultValue={editing?.cotizacion ?? ""}
-                          required
-                        />
-                        <select
-                          name="moneda"
-                          className="form-select"
-                          style={{ maxWidth: 110 }}
-                          defaultValue={editing?.moneda ?? "Pesos"}
-                          required
-                        >
-                          <option value="Pesos">Pesos</option>
-                          <option value="USD">USD</option>
-                          <option value="Euros">Euros</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Forma de pago</label>
-                      <select
-                        name="forma_pago"
-                        className="form-select"
-                        defaultValue={editing?.forma_pago ?? ""}
-                        required
-                      >
-                        <option value="">Seleccionar</option>
-                        <option value="Efectivo">Efectivo</option>
-                        <option value="Deposito">Depósito</option>
-                        <option value="Tarjeta">Tarjeta</option>
-                      </select>
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label mb-2">Depósito</label>
-                      <div className="row g-2">
-                        <div className="col-md-4">
-                          <div className="input-group">
-                            <span className="input-group-text">$</span>
-                            <input
-                              name="deposito_pesos"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              className="form-control"
-                              placeholder="Pesos"
-                              defaultValue={editing?.deposito_pesos ?? ""}
-                            />
-                          </div>
-                        </div>
-                        <div className="col-md-4">
-                          <div className="input-group">
-                            <span className="input-group-text">USD</span>
-                            <input
-                              name="deposito_usd"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              className="form-control"
-                              placeholder="USD"
-                              defaultValue={editing?.deposito_usd ?? ""}
-                            />
-                          </div>
-                        </div>
-                        <div className="col-md-4">
-                          <div className="input-group">
-                            <span className="input-group-text">€</span>
-                            <input
-                              name="deposito_euros"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              className="form-control"
-                              placeholder="Euros"
-                              defaultValue={editing?.deposito_euros ?? ""}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Fecha de la cita</label>
-                      <input
-                        name="fecha_cita"
-                        type="datetime-local"
-                        className="form-control"
-                        defaultValue={editing ? toDateTimeLocal(editing.fecha_cita) : ""}
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setModalOpen(false)}
-                  >
-                    Cancelar
-                  </button>
-                  <button type="submit" className="btn btn-dark" disabled={submitting}>
-                    {submitting ? "Guardando..." : editing ? "Guardar cambios" : "Guardar"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+    return (
+      <div className="card mb-3">
+        <div className="card-header d-flex justify-content-between align-items-center">
+          <span className="fw-semibold">{title}</span>
+          <span className="text-muted small">{list.length} registros</span>
         </div>
-      )}
-
-      <div className="card">
         <div className="table-responsive">
           <table className="table table-hover mb-0">
             <thead className="table-light">
@@ -325,26 +150,24 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                 <th>Forma de pago</th>
                 <th>Fecha de cita</th>
                 <th>Estado</th>
-                <th style={{ width: 180 }}>Acciones</th>
+                {showActions && <th style={{ width: 180 }}>Acciones</th>}
               </tr>
             </thead>
             <tbody>
-              {appointments.length === 0 && (
+              {slice.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="text-center text-muted py-4">
-                    No hay citas registradas
+                  <td colSpan={showActions ? 12 : 11} className="text-center text-muted py-4">
+                    No hay citas {title.toLowerCase()}
                   </td>
                 </tr>
               )}
-              {appointments.map((a) => (
+              {slice.map((a) => (
                 <tr key={a.id}>
                   <td>{a.name}</td>
                   <td>{a.gerente_name}</td>
                   <td>{a.tatuador_name}</td>
                   <td>{a.jalador_name}</td>
-                  <td>
-                    {Number(a.cotizacion).toFixed(2)} {a.moneda === "Pesos" ? "$" : a.moneda}
-                  </td>
+                  <td>{Number(a.cotizacion).toFixed(2)} {a.moneda === "Pesos" ? "$" : a.moneda}</td>
                   <td>${Number(a.deposito_pesos || 0).toFixed(2)}</td>
                   <td>${Number(a.deposito_usd || 0).toFixed(2)}</td>
                   <td>${Number(a.deposito_euros || 0).toFixed(2)}</td>
@@ -355,36 +178,142 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                       {statusLabels[a.status] || a.status}
                     </span>
                   </td>
-                  <td>
-                    <button
-                      className="btn btn-sm btn-outline-secondary me-1"
-                      onClick={() => openEdit(a)}
-                    >
-                      Editar
-                    </button>
-                    {a.status === "pendiente" && (
-                      <>
-                        <button
-                          className="btn btn-sm btn-outline-success me-1"
-                          onClick={() => handleComplete(a.id)}
-                        >
-                          Concretar
-                        </button>
-                        <button
-                          className="btn btn-sm btn-outline-danger"
-                          onClick={() => handleCancel(a.id)}
-                        >
-                          Cancelar
-                        </button>
-                      </>
-                    )}
-                  </td>
+                  {showActions && (
+                    <td>
+                      <button className="btn btn-sm btn-outline-secondary me-1" onClick={() => openEdit(a)}>
+                        Editar
+                      </button>
+                      {a.status === "pendiente" && (
+                        <>
+                          <button className="btn btn-sm btn-outline-success me-1" onClick={() => handleComplete(a.id)}>
+                            Concretar
+                          </button>
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleCancel(a.id)}>
+                            Cancelar
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        <Pagination page={page} total={list.length} onChange={setPage} />
       </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h2 className="h4 mb-0">Citas</h2>
+        <button className="btn btn-dark" onClick={openCreate}>
+          + Nueva cita
+        </button>
+      </div>
+
+      {modalOpen && (
+        <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">{editing ? "Editar cita" : "Nueva cita"}</h5>
+                <button type="button" className="btn-close" onClick={() => setModalOpen(false)} />
+              </div>
+              <form onSubmit={handleSubmit}>
+                <div className="modal-body">
+                  {editing && <input type="hidden" name="id" value={editing.id} />}
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <label className="form-label">Nombre</label>
+                      <input name="name" type="text" className="form-control" defaultValue={editing?.name ?? ""} required />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Gerente</label>
+                      <select name="gerente_id" className="form-select" defaultValue={editing?.gerente_id ?? ""} required>
+                        <option value="">Seleccionar</option>
+                        {gerentes.map((g) => (<option key={g.id} value={g.id}>{g.name}</option>))}
+                      </select>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Tatuador</label>
+                      <select name="tatuador_id" className="form-select" defaultValue={editing?.tatuador_id ?? ""} required>
+                        <option value="">Seleccionar</option>
+                        {tatuadores.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
+                      </select>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Jalador</label>
+                      <select name="jalador_id" className="form-select" defaultValue={editing?.jalador_id ?? ""} required>
+                        <option value="">Seleccionar</option>
+                        {jaladores.map((j) => (<option key={j.id} value={j.id}>{j.name}</option>))}
+                      </select>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Cotización</label>
+                      <div className="input-group">
+                        <input name="cotizacion" type="number" step="0.01" min="0" className="form-control" defaultValue={editing?.cotizacion ?? ""} required />
+                        <select name="moneda" className="form-select" style={{ maxWidth: 110 }} defaultValue={editing?.moneda ?? "Pesos"} required>
+                          <option value="Pesos">Pesos</option>
+                          <option value="USD">USD</option>
+                          <option value="Euros">Euros</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Forma de pago</label>
+                      <select name="forma_pago" className="form-select" defaultValue={editing?.forma_pago ?? ""} required>
+                        <option value="">Seleccionar</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Deposito">Depósito</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                      </select>
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label mb-2">Depósito</label>
+                      <div className="row g-2">
+                        <div className="col-md-4">
+                          <div className="input-group">
+                            <span className="input-group-text">$</span>
+                            <input name="deposito_pesos" type="number" step="0.01" min="0" className="form-control" placeholder="Pesos" defaultValue={editing?.deposito_pesos ?? ""} />
+                          </div>
+                        </div>
+                        <div className="col-md-4">
+                          <div className="input-group">
+                            <span className="input-group-text">USD</span>
+                            <input name="deposito_usd" type="number" step="0.01" min="0" className="form-control" placeholder="USD" defaultValue={editing?.deposito_usd ?? ""} />
+                          </div>
+                        </div>
+                        <div className="col-md-4">
+                          <div className="input-group">
+                            <span className="input-group-text">€</span>
+                            <input name="deposito_euros" type="number" step="0.01" min="0" className="form-control" placeholder="Euros" defaultValue={editing?.deposito_euros ?? ""} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Fecha de la cita</label>
+                      <input name="fecha_cita" type="datetime-local" className="form-control" defaultValue={editing ? toDateTimeLocal(editing.fecha_cita) : ""} required />
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancelar</button>
+                  <button type="submit" className="btn btn-dark" disabled={submitting}>
+                    {submitting ? "Guardando..." : editing ? "Guardar cambios" : "Guardar"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {renderTable("Pendientes", pending, pendingPage, setPendingPage, true)}
+      {renderTable("Historial", history, historyPage, setHistoryPage, false)}
     </>
   );
 }
