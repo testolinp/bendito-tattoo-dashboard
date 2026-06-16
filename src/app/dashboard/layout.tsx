@@ -59,6 +59,16 @@ export default function DashboardLayout({
               </Link>
             );
           })}
+          <hr className="border-secondary my-2" />
+          <Link
+            href="/dashboard/users"
+            onClick={() => setSidebarOpen(false)}
+            className={`btn w-100 text-start mb-1 ${
+              pathname === "/dashboard/users" ? "btn-light text-dark" : "btn-dark text-white"
+            }`}
+          >
+            Usuarios
+          </Link>
         </nav>
 
         <div className="p-3 border-top border-secondary">
