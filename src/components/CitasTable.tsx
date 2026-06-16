@@ -125,6 +125,10 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
     const fechaCita = formData.get("fecha_cita") as string;
     if (fechaCita) formData.set("fecha_cita", naiveToISO(fechaCita));
 
+    const codigoPais = formData.get("codigo_pais") as string || "+52";
+    const telefono = formData.get("telefono") as string || "";
+    formData.set("telefono", `${codigoPais} ${telefono}`);
+
     const action = editing ? updateAppointment(formData) : createAppointment(formData);
     const result = await action;
 
@@ -258,6 +262,22 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                       <input name="name" type="text" className="form-control" defaultValue={editing?.name ?? ""} required />
                     </div>
                     <div className="col-md-6">
+                      <label className="form-label">Teléfono</label>
+                      <div className="input-group">
+                        <select name="codigo_pais" className="form-select" style={{ maxWidth: 110 }} defaultValue={editing ? (editing.telefono?.split(" ")[0] ?? "+52") : "+52"}>
+                          <option value="+52">🇲🇽 +52</option>
+                          <option value="+1">🇺🇸 +1</option>
+                          <option value="+34">🇪🇸 +34</option>
+                          <option value="+54">🇦🇷 +54</option>
+                          <option value="+57">🇨🇴 +57</option>
+                          <option value="+56">🇨🇱 +56</option>
+                          <option value="+51">🇵🇪 +51</option>
+                          <option value="+598">🇺🇾 +598</option>
+                        </select>
+                        <input name="telefono" type="tel" className="form-control" placeholder="5551234567" defaultValue={editing ? (editing.telefono?.split(" ").slice(1).join(" ") ?? "") : ""} />
+                      </div>
+                    </div>
+                    <div className="col-md-6">
                       <label className="form-label">Gerente</label>
                       <select name="gerente_id" className="form-select" defaultValue={editing?.gerente_id ?? ""} required>
                         <option value="">Seleccionar</option>
@@ -373,6 +393,10 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                   <div className="col-md-6">
                     <label className="form-label text-muted small">Nombre</label>
                     <div className="fw-semibold">{viewing.name}</div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small">Teléfono</label>
+                    <div className="fw-semibold">{viewing.telefono || "-"}</div>
                   </div>
                   <div className="col-md-6">
                     <label className="form-label text-muted small">Gerente</label>

@@ -322,6 +322,12 @@ export default function DashboardCards() {
                       </div>
                       <div className="col-md-6">
                         <label className="form-label text-muted small">
+                          Teléfono
+                        </label>
+                        <div className="fw-semibold">{viewing.telefono || "-"}</div>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label text-muted small">
                           Fecha
                         </label>
                         <div className="fw-semibold">

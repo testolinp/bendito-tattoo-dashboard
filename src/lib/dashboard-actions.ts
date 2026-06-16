@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 export type TurnoRow = {
   id: number;
   name: string;
+  telefono: string;
   gerente_id: number;
   gerente_name: string;
   tatuador_id: number;
@@ -65,7 +66,7 @@ export async function getIncomeStats(start: string, end: string) {
   const { data, error } = await supabase
     .from("turnos")
     .select(
-      `id, name, fecha_cita, cotizacion, moneda,
+      `id, name, telefono, fecha_cita, cotizacion, moneda,
        gerente_id, tatuador_id, jalador_id,
        deposito_pesos, deposito_usd, deposito_euros,
        forma_pago, pago_pesos, pago_usd, pago_euros, pago_forma_pago,
@@ -178,6 +179,7 @@ export async function getIncomeStats(start: string, end: string) {
     turnos.push({
       id: t.id,
       name: t.name,
+      telefono: t.telefono ?? "",
       gerente_id: Number(t.gerente_id),
       gerente_name: extractName(t.gerente),
       tatuador_id: Number(t.tatuador_id),

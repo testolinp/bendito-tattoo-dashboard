@@ -548,3 +548,244 @@ $$;
 
 GRANT EXECUTE ON FUNCTION create_turno(text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, timestamptz) TO authenticated;
 GRANT EXECUTE ON FUNCTION update_turno(bigint, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, timestamptz) TO authenticated;
+
+-- Agregar columna telefono
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS telefono TEXT NOT NULL DEFAULT '';
+ALTER TABLE turnos ADD COLUMN IF NOT EXISTS telefono TEXT NOT NULL DEFAULT '';
+
+-- Recrear funciones de appointments para incluir telefono
+CREATE OR REPLACE FUNCTION get_appointments()
+RETURNS JSON
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN (
+    SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
+    FROM (
+      SELECT
+        a.id, a.name, a.telefono,
+        a.gerente_id, COALESCE(NULLIF(g.nickname, ''), g.name) AS gerente_name,
+        a.tatuador_id, COALESCE(NULLIF(t.nickname, ''), t.name) AS tatuador_name,
+        a.jalador_id, COALESCE(NULLIF(j.nickname, ''), j.name) AS jalador_name,
+        a.cotizacion, a.moneda,
+        a.deposito_pesos, a.deposito_usd, a.deposito_euros,
+        a.forma_pago,
+        a.fecha_cita, a.status
+      FROM appointments a
+      LEFT JOIN staff g ON a.gerente_id = g.id
+      LEFT JOIN staff t ON a.tatuador_id = t.id
+      LEFT JOIN staff j ON a.jalador_id = j.id
+      ORDER BY a.created_at DESC
+    ) t
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION create_appointment(
+  p_name text,
+  p_telefono text,
+  p_gerente_id bigint,
+  p_tatuador_id bigint,
+  p_jalador_id bigint,
+  p_cotizacion numeric,
+  p_moneda text,
+  p_deposito_pesos numeric,
+  p_deposito_usd numeric,
+  p_deposito_euros numeric,
+  p_forma_pago text,
+  p_fecha_cita timestamptz
+)
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  INSERT INTO appointments (name, telefono, gerente_id, tatuador_id, jalador_id, cotizacion, moneda, deposito_pesos, deposito_usd, deposito_euros, forma_pago, fecha_cita)
+  VALUES (p_name, p_telefono, p_gerente_id, p_tatuador_id, p_jalador_id, p_cotizacion, p_moneda, p_deposito_pesos, p_deposito_usd, p_deposito_euros, p_forma_pago, p_fecha_cita);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION update_appointment(
+  p_id bigint,
+  p_name text,
+  p_telefono text,
+  p_gerente_id bigint,
+  p_tatuador_id bigint,
+  p_jalador_id bigint,
+  p_cotizacion numeric,
+  p_moneda text,
+  p_deposito_pesos numeric,
+  p_deposito_usd numeric,
+  p_deposito_euros numeric,
+  p_forma_pago text,
+  p_fecha_cita timestamptz
+)
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE appointments
+  SET name = p_name,
+      telefono = p_telefono,
+      gerente_id = p_gerente_id,
+      tatuador_id = p_tatuador_id,
+      jalador_id = p_jalador_id,
+      cotizacion = p_cotizacion,
+      moneda = p_moneda,
+      deposito_pesos = p_deposito_pesos,
+      deposito_usd = p_deposito_usd,
+      deposito_euros = p_deposito_euros,
+      forma_pago = p_forma_pago,
+      fecha_cita = p_fecha_cita,
+      updated_at = now()
+  WHERE id = p_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION complete_appointment(p_id bigint)
+RETURNS bigint
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+  v_appointment appointments%ROWTYPE;
+  v_turno_id bigint;
+BEGIN
+  SELECT * INTO v_appointment FROM appointments WHERE id = p_id;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+
+  UPDATE appointments SET status = 'concretada', updated_at = now() WHERE id = p_id;
+
+  INSERT INTO turnos (
+    appointment_id, name, telefono, gerente_id, tatuador_id, jalador_id,
+    cotizacion, moneda, deposito_pesos, deposito_usd, deposito_euros,
+    forma_pago, pago_pesos, pago_usd, pago_euros, pago_forma_pago, fecha_cita
+  ) VALUES (
+    v_appointment.id, v_appointment.name, v_appointment.telefono,
+    v_appointment.gerente_id, v_appointment.tatuador_id, v_appointment.jalador_id,
+    v_appointment.cotizacion, v_appointment.moneda,
+    v_appointment.deposito_pesos, v_appointment.deposito_usd, v_appointment.deposito_euros,
+    v_appointment.forma_pago,
+    0, 0, 0, 'Efectivo',
+    v_appointment.fecha_cita
+  )
+  RETURNING id INTO v_turno_id;
+
+  RETURN v_turno_id;
+END;
+$$;
+
+-- Recrear funciones de turnos para incluir telefono
+CREATE OR REPLACE FUNCTION get_turnos()
+RETURNS JSON
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN (
+    SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
+    FROM (
+      SELECT
+        t.id, t.name, t.telefono,
+        t.gerente_id, COALESCE(NULLIF(g.nickname, ''), g.name) AS gerente_name,
+        t.tatuador_id, COALESCE(NULLIF(tu.nickname, ''), tu.name) AS tatuador_name,
+        t.jalador_id, COALESCE(NULLIF(j.nickname, ''), j.name) AS jalador_name,
+        t.cotizacion, t.moneda,
+        t.deposito_pesos, t.deposito_usd, t.deposito_euros,
+        t.forma_pago,
+        t.pago_pesos, t.pago_usd, t.pago_euros, t.pago_forma_pago,
+        t.porcentaje_tatuador, t.porcentaje_jalador, t.porcentaje_gerente,
+        t.fecha_cita,
+        t.appointment_id
+      FROM turnos t
+      LEFT JOIN staff g ON t.gerente_id = g.id
+      LEFT JOIN staff tu ON t.tatuador_id = tu.id
+      LEFT JOIN staff j ON t.jalador_id = j.id
+      ORDER BY t.created_at DESC
+    ) t
+  );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION create_turno(
+  p_name text,
+  p_telefono text,
+  p_gerente_id bigint,
+  p_tatuador_id bigint,
+  p_jalador_id bigint,
+  p_cotizacion numeric,
+  p_moneda text,
+  p_deposito_pesos numeric,
+  p_deposito_usd numeric,
+  p_deposito_euros numeric,
+  p_forma_pago text,
+  p_pago_pesos numeric,
+  p_pago_usd numeric,
+  p_pago_euros numeric,
+  p_pago_forma_pago text,
+  p_porcentaje_tatuador numeric,
+  p_porcentaje_jalador numeric,
+  p_porcentaje_gerente numeric,
+  p_fecha_cita timestamptz
+)
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  INSERT INTO turnos (name, telefono, gerente_id, tatuador_id, jalador_id, cotizacion, moneda, deposito_pesos, deposito_usd, deposito_euros, forma_pago, pago_pesos, pago_usd, pago_euros, pago_forma_pago, porcentaje_tatuador, porcentaje_jalador, porcentaje_gerente, fecha_cita)
+  VALUES (p_name, p_telefono, p_gerente_id, p_tatuador_id, p_jalador_id, p_cotizacion, p_moneda, p_deposito_pesos, p_deposito_usd, p_deposito_euros, p_forma_pago, p_pago_pesos, p_pago_usd, p_pago_euros, p_pago_forma_pago, p_porcentaje_tatuador, p_porcentaje_jalador, p_porcentaje_gerente, p_fecha_cita);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION update_turno(
+  p_id bigint,
+  p_name text,
+  p_telefono text,
+  p_gerente_id bigint,
+  p_tatuador_id bigint,
+  p_jalador_id bigint,
+  p_cotizacion numeric,
+  p_moneda text,
+  p_deposito_pesos numeric,
+  p_deposito_usd numeric,
+  p_deposito_euros numeric,
+  p_forma_pago text,
+  p_pago_pesos numeric,
+  p_pago_usd numeric,
+  p_pago_euros numeric,
+  p_pago_forma_pago text,
+  p_porcentaje_tatuador numeric,
+  p_porcentaje_jalador numeric,
+  p_porcentaje_gerente numeric,
+  p_fecha_cita timestamptz
+)
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE turnos
+  SET name = p_name,
+      telefono = p_telefono,
+      gerente_id = p_gerente_id,
+      tatuador_id = p_tatuador_id,
+      jalador_id = p_jalador_id,
+      cotizacion = p_cotizacion,
+      moneda = p_moneda,
+      deposito_pesos = p_deposito_pesos,
+      deposito_usd = p_deposito_usd,
+      deposito_euros = p_deposito_euros,
+      forma_pago = p_forma_pago,
+      pago_pesos = p_pago_pesos,
+      pago_usd = p_pago_usd,
+      pago_euros = p_pago_euros,
+      pago_forma_pago = p_pago_forma_pago,
+      porcentaje_tatuador = p_porcentaje_tatuador,
+      porcentaje_jalador = p_porcentaje_jalador,
+      porcentaje_gerente = p_porcentaje_gerente,
+      fecha_cita = p_fecha_cita
+  WHERE id = p_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION create_appointment(text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION update_appointment(bigint, text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION complete_appointment(bigint) TO authenticated;
+GRANT EXECUTE ON FUNCTION create_turno(text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION update_turno(bigint, text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, timestamptz) TO authenticated;
