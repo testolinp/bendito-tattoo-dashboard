@@ -43,7 +43,7 @@ export async function listUsers(): Promise<AdminUser[]> {
     id: u.id,
     email: u.email ?? "",
     createdAt: u.created_at,
-    isAdmin: u.user_metadata?.is_admin === true,
+    isAdmin: u.email === "admin@benditotattoo.com" || u.user_metadata?.is_admin === true,
   }));
 }
 
