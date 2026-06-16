@@ -14,6 +14,11 @@ export type TurnoRow = {
   deposito_pesos: number;
   deposito_usd: number;
   deposito_euros: number;
+  forma_pago: string;
+  pago_pesos: number;
+  pago_usd: number;
+  pago_euros: number;
+  pago_forma_pago: string;
 };
 
 export type IncomeStats = {
@@ -43,6 +48,7 @@ export async function getIncomeStats(start: string, end: string) {
     .select(
       `id, name, fecha_cita, cotizacion, moneda,
        deposito_pesos, deposito_usd, deposito_euros,
+       forma_pago, pago_pesos, pago_usd, pago_euros, pago_forma_pago,
        gerente:staff!gerente_id(name),
        tatuador:staff!tatuador_id(name),
        jalador:staff!jalador_id(name)`
@@ -73,14 +79,17 @@ export async function getIncomeStats(start: string, end: string) {
     const dp = Number(t.deposito_pesos);
     const du = Number(t.deposito_usd);
     const de = Number(t.deposito_euros);
+    const pp = Number(t.pago_pesos);
+    const pu = Number(t.pago_usd);
+    const pe = Number(t.pago_euros);
 
     totalCotizacion += cot;
     if (t.moneda === "Pesos") totalPesos += cot;
     else if (t.moneda === "USD") totalUsd += cot;
     else if (t.moneda === "Euros") totalEuros += cot;
-    totalPesos += dp;
-    totalUsd += du;
-    totalEuros += de;
+    totalPesos += dp + pp;
+    totalUsd += du + pu;
+    totalEuros += de + pe;
     totalDepPesos += dp;
     totalDepUsd += du;
     totalDepEuros += de;
@@ -117,6 +126,11 @@ export async function getIncomeStats(start: string, end: string) {
       deposito_pesos: dp,
       deposito_usd: du,
       deposito_euros: de,
+      forma_pago: t.forma_pago ?? "",
+      pago_pesos: pp,
+      pago_usd: pu,
+      pago_euros: pe,
+      pago_forma_pago: t.pago_forma_pago ?? "",
     });
   }
 

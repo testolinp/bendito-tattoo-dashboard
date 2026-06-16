@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { getIncomeStats, type IncomeStats } from "@/lib/dashboard-actions";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { getIncomeStats, type IncomeStats, type TurnoRow } from "@/lib/dashboard-actions";
 import { formatDateTime } from "@/lib/datetime-utils";
 
 type Period = "day" | "week" | "month";
@@ -68,6 +68,12 @@ export default function DashboardCards() {
   const [period, setPeriod] = useState<Period>("day");
   const [offset, setOffset] = useState(0);
   const [stats, setStats] = useState<IncomeStats | null>(null);
+  const [viewing, setViewing] = useState<TurnoRow | null>(null);
+  const viewModalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (viewing) viewModalRef.current?.focus();
+  }, [viewing]);
 
   const fetchStats = useCallback(async () => {
     const { start, end } = getDateRange(period, offset);
@@ -154,37 +160,155 @@ export default function DashboardCards() {
               <div className="card-header">Turnos</div>
               <div className="table-responsive">
                 <table className="table table-sm mb-0">
-                  <thead className="table-light">
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Cliente</th>
-                      <th>Gerente</th>
-                      <th>Tatuador</th>
-                      <th>Jalador</th>
-                      <th>Cotización</th>
-                      <th>Dep. Pesos</th>
-                      <th>Dep. USD</th>
-                      <th>Dep. Euros</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.turnos.map((t) => (
-                      <tr key={t.id}>
-                        <td>{formatDateTime(t.fecha_cita)}</td>
-                        <td>{t.name}</td>
-                        <td>{t.gerente_name}</td>
-                        <td>{t.tatuador_name}</td>
-                        <td>{t.jalador_name}</td>
-                        <td>
-                          ${fmt(t.cotizacion)} {t.moneda === "Pesos" ? "$" : t.moneda}
-                        </td>
-                        <td>${fmt(t.deposito_pesos)}</td>
-                        <td>${fmt(t.deposito_usd)}</td>
-                        <td>€{fmt(t.deposito_euros)}</td>
+                    <thead className="table-light">
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Gerente</th>
+                        <th>Tatuador</th>
+                        <th>Jalador</th>
+                        <th>Cotización</th>
+                        <th>Acción</th>
                       </tr>
-                    ))}
-                  </tbody>
+                    </thead>
+                    <tbody>
+                      {stats.turnos.map((t) => (
+                        <tr key={t.id}>
+                          <td>{formatDateTime(t.fecha_cita)}</td>
+                          <td>{t.name}</td>
+                          <td>{t.gerente_name}</td>
+                          <td>{t.tatuador_name}</td>
+                          <td>{t.jalador_name}</td>
+                          <td>
+                            ${fmt(t.cotizacion)} {t.moneda === "Pesos" ? "$" : t.moneda}
+                          </td>
+                          <td>
+                            <button className="btn btn-sm btn-outline-dark" onClick={() => setViewing(t)}>Ver</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {viewing && (
+            <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }} ref={viewModalRef} onKeyDown={(e) => { if (e.key === "Escape") setViewing(null); }}>
+              <div className="modal-dialog modal-dialog-centered modal-lg">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h5 className="modal-title">Detalles del turno</h5>
+                    <button type="button" className="btn-close" onClick={() => setViewing(null)} />
+                  </div>
+                  <div className="modal-body">
+                    <div className="row g-3">
+                      <div className="col-md-6">
+                        <label className="form-label text-muted small">Nombre</label>
+                        <div className="fw-semibold">{viewing.name}</div>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label text-muted small">Fecha</label>
+                        <div className="fw-semibold">{formatDateTime(viewing.fecha_cita)}</div>
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label text-muted small">Gerente</label>
+                        <div className="fw-semibold">{viewing.gerente_name}</div>
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label text-muted small">Tatuador</label>
+                        <div className="fw-semibold">{viewing.tatuador_name}</div>
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label text-muted small">Jalador</label>
+                        <div className="fw-semibold">{viewing.jalador_name}</div>
+                      </div>
+                      <div className="col-12">
+                        <hr className="my-2" />
+                        <h6 className="fw-bold mb-2">Cotización</h6>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label text-muted small">Cotización</label>
+                        <div className="fw-semibold">
+                          ${fmt(viewing.cotizacion)} {viewing.moneda === "Pesos" ? "$" : viewing.moneda}
+                        </div>
+                      </div>
+                      <div className="col-md-6 d-flex align-items-end pb-1">
+                        <div className="fw-semibold fs-4">
+                          {(() => {
+                            const q = Number(viewing.cotizacion);
+                            const r = viewing.moneda === "USD" ? 16 : viewing.moneda === "Euros" ? 19 : 1;
+                            const qPesos = q * r;
+                            const p = Number(viewing.deposito_pesos || 0) + Number(viewing.deposito_usd || 0) * 16 + Number(viewing.deposito_euros || 0) * 19 + Number(viewing.pago_pesos || 0) + Number(viewing.pago_usd || 0) * 16 + Number(viewing.pago_euros || 0) * 19;
+                            const rem = Math.max(0, qPesos - p);
+                            return `Falta pagar: $${rem.toFixed(2)}`;
+                          })()}
+                        </div>
+                      </div>
+                      {(Number(viewing.deposito_pesos || 0) > 0 ||
+                        Number(viewing.deposito_usd || 0) > 0 ||
+                        Number(viewing.deposito_euros || 0) > 0) && (
+                        <>
+                          <div className="col-12">
+                            <hr className="my-2" />
+                            <h6 className="fw-bold mb-2">Depósito</h6>
+                          </div>
+                          {Number(viewing.deposito_pesos || 0) > 0 && (
+                            <div className="col-md-3">
+                              <label className="form-label text-muted small">Pesos</label>
+                              <div className="fw-semibold">${fmt(viewing.deposito_pesos)}</div>
+                            </div>
+                          )}
+                          {Number(viewing.deposito_usd || 0) > 0 && (
+                            <div className="col-md-3">
+                              <label className="form-label text-muted small">USD</label>
+                              <div className="fw-semibold">${fmt(viewing.deposito_usd)}</div>
+                            </div>
+                          )}
+                          {Number(viewing.deposito_euros || 0) > 0 && (
+                            <div className="col-md-3">
+                              <label className="form-label text-muted small">Euros</label>
+                              <div className="fw-semibold">€{fmt(viewing.deposito_euros)}</div>
+                            </div>
+                          )}
+                          <div className="col-md-3">
+                            <label className="form-label text-muted small">Forma de pago</label>
+                            <div className="fw-semibold">{viewing.forma_pago}</div>
+                          </div>
+                        </>
+                      )}
+                      <div className="col-12">
+                        <hr className="my-2" />
+                        <h6 className="fw-bold mb-2">Pago</h6>
+                      </div>
+                      {Number(viewing.pago_pesos || 0) > 0 && (
+                        <div className="col-md-3">
+                          <label className="form-label text-muted small">Pesos</label>
+                          <div className="fw-semibold">${fmt(viewing.pago_pesos)}</div>
+                        </div>
+                      )}
+                      {Number(viewing.pago_usd || 0) > 0 && (
+                        <div className="col-md-3">
+                          <label className="form-label text-muted small">USD</label>
+                          <div className="fw-semibold">${fmt(viewing.pago_usd)}</div>
+                        </div>
+                      )}
+                      {Number(viewing.pago_euros || 0) > 0 && (
+                        <div className="col-md-3">
+                          <label className="form-label text-muted small">Euros</label>
+                          <div className="fw-semibold">€{fmt(viewing.pago_euros)}</div>
+                        </div>
+                      )}
+                      <div className="col-md-3">
+                        <label className="form-label text-muted small">Forma de pago</label>
+                        <div className="fw-semibold">{viewing.pago_forma_pago}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={() => setViewing(null)}>Cerrar</button>
+                  </div>
+                </div>
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createStaff, updateStaff, deleteStaff } from "@/lib/staff-actions";
 import type { StaffMember } from "@/lib/staff-actions";
 
@@ -13,6 +13,11 @@ type Props = {
 export default function StaffTable({ staff, role, title }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<StaffMember | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (modalOpen) modalRef.current?.focus();
+  }, [modalOpen]);
 
   const openCreate = () => {
     setEditing(null);
@@ -117,6 +122,8 @@ export default function StaffTable({ staff, role, title }: Props) {
           className="modal d-block"
           tabIndex={-1}
           style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          ref={modalRef}
+          onKeyDown={(e) => { if (e.key === "Escape") setModalOpen(false); }}
         >
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">

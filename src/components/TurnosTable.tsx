@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createTurno, updateTurno } from "@/lib/turnos-actions";
 import type { Turno } from "@/lib/turnos-actions";
@@ -82,6 +82,17 @@ export default function TurnosTable({
   const [formPagPesos, setFormPagPesos] = useState("");
   const [formPagUsd, setFormPagUsd] = useState("");
   const [formPagEur, setFormPagEur] = useState("");
+
+  const editModalRef = useRef<HTMLDivElement>(null);
+  const viewModalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (modalOpen) editModalRef.current?.focus();
+  }, [modalOpen]);
+
+  useEffect(() => {
+    if (viewing) viewModalRef.current?.focus();
+  }, [viewing]);
 
   const currentDate = new Date();
   const upcomingTurnos = turnos.filter(
@@ -194,6 +205,8 @@ export default function TurnosTable({
           className="modal d-block"
           tabIndex={-1}
           style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          ref={editModalRef}
+          onKeyDown={(e) => { if (e.key === "Escape") closeModal(); }}
         >
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
@@ -328,87 +341,90 @@ export default function TurnosTable({
                         })()}
                       </div>
                     </div>
-                    {/* Depósito */}
-                    <div className="col-12">
-                      <hr className="my-2" />
-                      <h6 className="fw-bold mb-2">Depósito</h6>
-                    </div>
-                    <div className="col-12">
-                      <div className="row g-2">
-                        <div className="col-md-4">
-                          <div className="input-group">
-                            <span className="input-group-text">$</span>
-                            <input
-                              name="deposito_pesos"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              className="form-control"
-                              placeholder="Pesos"
-                              value={formDepPesos}
-                              onChange={(e) => setFormDepPesos(e.target.value)}
-                              readOnly={!!editing}
-                              tabIndex={editing ? -1 : 0}
-                              style={editing ? { outline: "none", boxShadow: "none" } : undefined}
-                            />
+                    {(!editing || Number(formDepPesos) > 0 || Number(formDepUsd) > 0 || Number(formDepEur) > 0) && (
+                      <>
+                        <div className="col-12">
+                          <hr className="my-2" />
+                          <h6 className="fw-bold mb-2">Depósito</h6>
+                        </div>
+                        <div className="col-12">
+                          <div className="row g-2">
+                            <div className="col-md-4">
+                              <div className="input-group">
+                                <span className="input-group-text">$</span>
+                                <input
+                                  name="deposito_pesos"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  className="form-control"
+                                  placeholder="Pesos"
+                                  value={formDepPesos}
+                                  onChange={(e) => setFormDepPesos(e.target.value)}
+                                  readOnly={!!editing}
+                                  tabIndex={editing ? -1 : 0}
+                                  style={editing ? { outline: "none", boxShadow: "none" } : undefined}
+                                />
+                              </div>
+                            </div>
+                            <div className="col-md-4">
+                              <div className="input-group">
+                                <span className="input-group-text">USD</span>
+                                <input
+                                  name="deposito_usd"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  className="form-control"
+                                  placeholder="USD"
+                                  value={formDepUsd}
+                                  onChange={(e) => setFormDepUsd(e.target.value)}
+                                  readOnly={!!editing}
+                                  tabIndex={editing ? -1 : 0}
+                                  style={editing ? { outline: "none", boxShadow: "none" } : undefined}
+                                />
+                              </div>
+                            </div>
+                            <div className="col-md-4">
+                              <div className="input-group">
+                                <span className="input-group-text">€</span>
+                                <input
+                                  name="deposito_euros"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  className="form-control"
+                                  placeholder="Euros"
+                                  value={formDepEur}
+                                  onChange={(e) => setFormDepEur(e.target.value)}
+                                  readOnly={!!editing}
+                                  tabIndex={editing ? -1 : 0}
+                                  style={editing ? { outline: "none", boxShadow: "none" } : undefined}
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        <div className="col-md-4">
-                          <div className="input-group">
-                            <span className="input-group-text">USD</span>
-                            <input
-                              name="deposito_usd"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              className="form-control"
-                              placeholder="USD"
-                              value={formDepUsd}
-                              onChange={(e) => setFormDepUsd(e.target.value)}
-                              readOnly={!!editing}
-                              tabIndex={editing ? -1 : 0}
-                              style={editing ? { outline: "none", boxShadow: "none" } : undefined}
-                            />
-                          </div>
+                        <div className="col-md-6">
+                          <label className="form-label">Forma de pago</label>
+                          <select
+                            name="forma_pago"
+                            className="form-select"
+                            defaultValue={editing?.forma_pago ?? ""}
+                            required
+                            disabled={!!editing}
+                            tabIndex={editing ? -1 : 0}
+                            style={editing ? { outline: "none", boxShadow: "none" } : undefined}
+                          >
+                            <option value="">Seleccionar</option>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Deposito">Depósito</option>
+                            <option value="Tarjeta">Tarjeta</option>
+                          </select>
+                          {editing && <input type="hidden" name="forma_pago" value={editing.forma_pago} />}
                         </div>
-                        <div className="col-md-4">
-                          <div className="input-group">
-                            <span className="input-group-text">€</span>
-                            <input
-                              name="deposito_euros"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              className="form-control"
-                              placeholder="Euros"
-                              value={formDepEur}
-                              onChange={(e) => setFormDepEur(e.target.value)}
-                              readOnly={!!editing}
-                              tabIndex={editing ? -1 : 0}
-                              style={editing ? { outline: "none", boxShadow: "none" } : undefined}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Forma de pago</label>
-                      <select
-                        name="forma_pago"
-                        className="form-select"
-                        defaultValue={editing?.forma_pago ?? ""}
-                        required
-                        disabled={!!editing}
-                        tabIndex={editing ? -1 : 0}
-                        style={editing ? { outline: "none", boxShadow: "none" } : undefined}
-                      >
-                        <option value="">Seleccionar</option>
-                        <option value="Efectivo">Efectivo</option>
-                        <option value="Deposito">Depósito</option>
-                        <option value="Tarjeta">Tarjeta</option>
-                      </select>
-                      {editing && <input type="hidden" name="forma_pago" value={editing.forma_pago} />}
-                    </div>
+                      </>
+                    )}
                     {/* Pago */}
                     <div className="col-12">
                       <hr className="my-2" />
@@ -510,6 +526,8 @@ export default function TurnosTable({
           className="modal d-block"
           tabIndex={-1}
           style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          ref={viewModalRef}
+          onKeyDown={(e) => { if (e.key === "Escape") closeView(); }}
         >
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
@@ -564,26 +582,40 @@ export default function TurnosTable({
                       })()}
                     </div>
                   </div>
-                  <div className="col-12">
-                    <hr className="my-2" />
-                    <h6 className="fw-bold mb-2">Depósito</h6>
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label text-muted small">Pesos</label>
-                    <div className="fw-semibold">${Number(viewing.deposito_pesos || 0).toFixed(2)}</div>
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label text-muted small">USD</label>
-                    <div className="fw-semibold">${Number(viewing.deposito_usd || 0).toFixed(2)}</div>
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label text-muted small">Euros</label>
-                    <div className="fw-semibold">${Number(viewing.deposito_euros || 0).toFixed(2)}</div>
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label text-muted small">Forma de pago</label>
-                    <div className="fw-semibold">{viewing.forma_pago}</div>
-                  </div>
+                  {(Number(viewing.deposito_pesos || 0) > 0 ||
+                    Number(viewing.deposito_usd || 0) > 0 ||
+                    Number(viewing.deposito_euros || 0) > 0) && (
+                    <div className="col-12">
+                      <hr className="my-2" />
+                      <h6 className="fw-bold mb-2">Depósito</h6>
+                    </div>
+                  )}
+                  {Number(viewing.deposito_pesos || 0) > 0 && (
+                    <div className="col-md-3">
+                      <label className="form-label text-muted small">Pesos</label>
+                      <div className="fw-semibold">${Number(viewing.deposito_pesos).toFixed(2)}</div>
+                    </div>
+                  )}
+                  {Number(viewing.deposito_usd || 0) > 0 && (
+                    <div className="col-md-3">
+                      <label className="form-label text-muted small">USD</label>
+                      <div className="fw-semibold">${Number(viewing.deposito_usd).toFixed(2)}</div>
+                    </div>
+                  )}
+                  {Number(viewing.deposito_euros || 0) > 0 && (
+                    <div className="col-md-3">
+                      <label className="form-label text-muted small">Euros</label>
+                      <div className="fw-semibold">${Number(viewing.deposito_euros).toFixed(2)}</div>
+                    </div>
+                  )}
+                  {(Number(viewing.deposito_pesos || 0) > 0 ||
+                    Number(viewing.deposito_usd || 0) > 0 ||
+                    Number(viewing.deposito_euros || 0) > 0) && (
+                    <div className="col-md-3">
+                      <label className="form-label text-muted small">Forma de pago</label>
+                      <div className="fw-semibold">{viewing.forma_pago}</div>
+                    </div>
+                  )}
                   <div className="col-12">
                     <hr className="my-2" />
                     <h6 className="fw-bold mb-2">Pago</h6>

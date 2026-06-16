@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   createAppointment,
@@ -62,6 +62,17 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
   const [formDepPesos, setFormDepPesos] = useState("");
   const [formDepUsd, setFormDepUsd] = useState("");
   const [formDepEur, setFormDepEur] = useState("");
+
+  const editModalRef = useRef<HTMLDivElement>(null);
+  const viewModalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (modalOpen) editModalRef.current?.focus();
+  }, [modalOpen]);
+
+  useEffect(() => {
+    if (viewing) viewModalRef.current?.focus();
+  }, [viewing]);
 
   const pending = appointments.filter((a) => a.status === "pendiente");
   const history = appointments.filter((a) => a.status === "concretada" || a.status === "cancelada");
@@ -231,7 +242,7 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
       </div>
 
       {modalOpen && (
-        <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }} ref={editModalRef} onKeyDown={(e) => { if (e.key === "Escape") setModalOpen(false); }}>
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
@@ -350,7 +361,7 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
       )}
 
       {viewing && (
-        <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }} ref={viewModalRef} onKeyDown={(e) => { if (e.key === "Escape") closeView(); }}>
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
@@ -400,26 +411,40 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                       })()}
                     </div>
                   </div>
-                  <div className="col-12">
-                    <hr className="my-2" />
-                    <h6 className="fw-bold mb-2">Depósito</h6>
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label text-muted small">Pesos</label>
-                    <div className="fw-semibold">${Number(viewing.deposito_pesos || 0).toFixed(2)}</div>
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label text-muted small">USD</label>
-                    <div className="fw-semibold">${Number(viewing.deposito_usd || 0).toFixed(2)}</div>
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label text-muted small">Euros</label>
-                    <div className="fw-semibold">${Number(viewing.deposito_euros || 0).toFixed(2)}</div>
-                  </div>
-                  <div className="col-md-3">
-                    <label className="form-label text-muted small">Forma de pago</label>
-                    <div className="fw-semibold">{viewing.forma_pago}</div>
-                  </div>
+                  {(Number(viewing.deposito_pesos || 0) > 0 ||
+                    Number(viewing.deposito_usd || 0) > 0 ||
+                    Number(viewing.deposito_euros || 0) > 0) && (
+                    <div className="col-12">
+                      <hr className="my-2" />
+                      <h6 className="fw-bold mb-2">Depósito</h6>
+                    </div>
+                  )}
+                  {Number(viewing.deposito_pesos || 0) > 0 && (
+                    <div className="col-md-3">
+                      <label className="form-label text-muted small">Pesos</label>
+                      <div className="fw-semibold">${Number(viewing.deposito_pesos).toFixed(2)}</div>
+                    </div>
+                  )}
+                  {Number(viewing.deposito_usd || 0) > 0 && (
+                    <div className="col-md-3">
+                      <label className="form-label text-muted small">USD</label>
+                      <div className="fw-semibold">${Number(viewing.deposito_usd).toFixed(2)}</div>
+                    </div>
+                  )}
+                  {Number(viewing.deposito_euros || 0) > 0 && (
+                    <div className="col-md-3">
+                      <label className="form-label text-muted small">Euros</label>
+                      <div className="fw-semibold">${Number(viewing.deposito_euros).toFixed(2)}</div>
+                    </div>
+                  )}
+                  {(Number(viewing.deposito_pesos || 0) > 0 ||
+                    Number(viewing.deposito_usd || 0) > 0 ||
+                    Number(viewing.deposito_euros || 0) > 0) && (
+                    <div className="col-md-3">
+                      <label className="form-label text-muted small">Forma de pago</label>
+                      <div className="fw-semibold">{viewing.forma_pago}</div>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="modal-footer">
