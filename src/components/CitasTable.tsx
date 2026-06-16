@@ -57,6 +57,15 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
 
   const pending = appointments.filter((a) => a.status === "pendiente");
   const history = appointments.filter((a) => a.status === "concretada" || a.status === "cancelada");
+  const gerenteLabelById = new Map(
+    gerentes.map((g) => [g.id, (g.nickname && g.nickname.trim()) || g.name]),
+  );
+  const tatuadorLabelById = new Map(
+    tatuadores.map((t) => [t.id, (t.nickname && t.nickname.trim()) || t.name]),
+  );
+  const jaladorLabelById = new Map(
+    jaladores.map((j) => [j.id, (j.nickname && j.nickname.trim()) || j.name]),
+  );
 
   const openCreate = () => {
     setEditing(null);
@@ -164,9 +173,9 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
               {slice.map((a) => (
                 <tr key={a.id}>
                   <td>{a.name}</td>
-                  <td>{a.gerente_name}</td>
-                  <td>{a.tatuador_name}</td>
-                  <td>{a.jalador_name}</td>
+                  <td>{gerenteLabelById.get(a.gerente_id) ?? a.gerente_name}</td>
+                  <td>{tatuadorLabelById.get(a.tatuador_id) ?? a.tatuador_name}</td>
+                  <td>{jaladorLabelById.get(a.jalador_id) ?? a.jalador_name}</td>
                   <td>{Number(a.cotizacion).toFixed(2)} {a.moneda === "Pesos" ? "$" : a.moneda}</td>
                   <td>${Number(a.deposito_pesos || 0).toFixed(2)}</td>
                   <td>${Number(a.deposito_usd || 0).toFixed(2)}</td>
@@ -234,21 +243,21 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                       <label className="form-label">Gerente</label>
                       <select name="gerente_id" className="form-select" defaultValue={editing?.gerente_id ?? ""} required>
                         <option value="">Seleccionar</option>
-                        {gerentes.map((g) => (<option key={g.id} value={g.id}>{g.name}</option>))}
+                        {gerentes.map((g) => (<option key={g.id} value={g.id}>{(g.nickname && g.nickname.trim()) || g.name}</option>))}
                       </select>
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Tatuador</label>
                       <select name="tatuador_id" className="form-select" defaultValue={editing?.tatuador_id ?? ""} required>
                         <option value="">Seleccionar</option>
-                        {tatuadores.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
+                        {tatuadores.map((t) => (<option key={t.id} value={t.id}>{(t.nickname && t.nickname.trim()) || t.name}</option>))}
                       </select>
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Jalador</label>
                       <select name="jalador_id" className="form-select" defaultValue={editing?.jalador_id ?? ""} required>
                         <option value="">Seleccionar</option>
-                        {jaladores.map((j) => (<option key={j.id} value={j.id}>{j.name}</option>))}
+                        {jaladores.map((j) => (<option key={j.id} value={j.id}>{(j.nickname && j.nickname.trim()) || j.name}</option>))}
                       </select>
                     </div>
                     <div className="col-md-6">

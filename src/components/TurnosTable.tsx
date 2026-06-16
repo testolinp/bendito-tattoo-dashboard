@@ -2,10 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import {
-  createTurno,
-  updateTurno,
-} from "@/lib/turnos-actions";
+import { createTurno, updateTurno } from "@/lib/turnos-actions";
 import type { Turno } from "@/lib/turnos-actions";
 import type { StaffMember } from "@/lib/staff-actions";
 
@@ -16,11 +13,53 @@ type Props = {
   jaladores: StaffMember[];
   editTurnoId?: number | null;
 };
+const PAGE_SIZE = 10;
+
+function Pagination({
+  page,
+  total,
+  onChange,
+}: {
+  page: number;
+  total: number;
+  onChange: (p: number) => void;
+}) {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="d-flex justify-content-center gap-1 py-2">
+      <button
+        className="btn btn-sm btn-outline-secondary"
+        disabled={page <= 0}
+        onClick={() => onChange(page - 1)}
+      >
+        ◀
+      </button>
+      {Array.from({ length: totalPages }, (_, i) => (
+        <button
+          key={i}
+          className={`btn btn-sm ${i === page ? "btn-dark" : "btn-outline-secondary"}`}
+          onClick={() => onChange(i)}
+        >
+          {i + 1}
+        </button>
+      ))}
+      <button
+        className="btn btn-sm btn-outline-secondary"
+        disabled={page >= totalPages - 1}
+        onClick={() => onChange(page + 1)}
+      >
+        ▶
+      </button>
+    </div>
+  );
+}
 
 const formatDateTime = (d: string) => {
   if (!d) return "";
   const date = new Date(d);
-  return date.toLocaleString("es-AR", {
+  return date.toLocaleString("es-MX", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -36,12 +75,36 @@ const toDateTimeLocal = (d: string) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
-export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores, editTurnoId }: Props) {
+export default function TurnosTable({
+  turnos,
+  gerentes,
+  tatuadores,
+  jaladores,
+  editTurnoId,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Turno | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [pastPage, setPastPage] = useState(0);
+
+  const currentDate = new Date();
+  const upcomingTurnos = turnos.filter(
+    (t) => new Date(t.fecha_cita) >= currentDate,
+  );
+  const pastTurnos = turnos.filter((t) => new Date(t.fecha_cita) < currentDate);
+  const pastStart = pastPage * PAGE_SIZE;
+  const pastSlice = pastTurnos.slice(pastStart, pastStart + PAGE_SIZE);
+  const gerenteLabelById = new Map(
+    gerentes.map((g) => [g.id, (g.nickname && g.nickname.trim()) || g.name]),
+  );
+  const tatuadorLabelById = new Map(
+    tatuadores.map((t) => [t.id, (t.nickname && t.nickname.trim()) || t.name]),
+  );
+  const jaladorLabelById = new Map(
+    jaladores.map((j) => [j.id, (j.nickname && j.nickname.trim()) || j.name]),
+  );
 
   const closeModal = () => {
     setModalOpen(false);
@@ -142,7 +205,7 @@ export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores, e
                         <option value="">Seleccionar</option>
                         {gerentes.map((g) => (
                           <option key={g.id} value={g.id}>
-                            {g.name}
+                            {(g.nickname && g.nickname.trim()) || g.name}
                           </option>
                         ))}
                       </select>
@@ -158,7 +221,7 @@ export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores, e
                         <option value="">Seleccionar</option>
                         {tatuadores.map((t) => (
                           <option key={t.id} value={t.id}>
-                            {t.name}
+                            {(t.nickname && t.nickname.trim()) || t.name}
                           </option>
                         ))}
                       </select>
@@ -174,7 +237,7 @@ export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores, e
                         <option value="">Seleccionar</option>
                         {jaladores.map((j) => (
                           <option key={j.id} value={j.id}>
-                            {j.name}
+                            {(j.nickname && j.nickname.trim()) || j.name}
                           </option>
                         ))}
                       </select>
@@ -271,7 +334,9 @@ export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores, e
                         name="fecha_cita"
                         type="datetime-local"
                         className="form-control"
-                        defaultValue={editing ? toDateTimeLocal(editing.fecha_cita) : ""}
+                        defaultValue={
+                          editing ? toDateTimeLocal(editing.fecha_cita) : ""
+                        }
                         required
                       />
                     </div>
@@ -285,8 +350,16 @@ export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores, e
                   >
                     Cancelar
                   </button>
-                  <button type="submit" className="btn btn-dark" disabled={submitting}>
-                    {submitting ? "Guardando..." : editing ? "Guardar cambios" : "Guardar"}
+                  <button
+                    type="submit"
+                    className="btn btn-dark"
+                    disabled={submitting}
+                  >
+                    {submitting
+                      ? "Guardando..."
+                      : editing
+                        ? "Guardar cambios"
+                        : "Guardar"}
                   </button>
                 </div>
               </form>
@@ -295,7 +368,13 @@ export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores, e
         </div>
       )}
 
-      <div className="card">
+      <div className="card mb-3">
+        <div className="card-header d-flex justify-content-between align-items-center">
+          <span className="fw-semibold">Turnos actuales y próximos</span>
+          <span className="text-muted small">
+            {upcomingTurnos.length} registros
+          </span>
+        </div>
         <div className="table-responsive">
           <table className="table table-hover mb-0">
             <thead className="table-light">
@@ -314,21 +393,28 @@ export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores, e
               </tr>
             </thead>
             <tbody>
-              {turnos.length === 0 && (
+              {upcomingTurnos.length === 0 && (
                 <tr>
                   <td colSpan={11} className="text-center text-muted py-4">
-                    No hay turnos registrados
+                    No hay turnos actuales o próximos
                   </td>
                 </tr>
               )}
-              {turnos.map((t) => (
+              {upcomingTurnos.map((t) => (
                 <tr key={t.id}>
                   <td>{t.name}</td>
-                  <td>{t.gerente_name}</td>
-                  <td>{t.tatuador_name}</td>
-                  <td>{t.jalador_name}</td>
                   <td>
-                    {Number(t.cotizacion).toFixed(2)} {t.moneda === "Pesos" ? "$" : t.moneda}
+                    {gerenteLabelById.get(t.gerente_id) ?? t.gerente_name}
+                  </td>
+                  <td>
+                    {tatuadorLabelById.get(t.tatuador_id) ?? t.tatuador_name}
+                  </td>
+                  <td>
+                    {jaladorLabelById.get(t.jalador_id) ?? t.jalador_name}
+                  </td>
+                  <td>
+                    {Number(t.cotizacion).toFixed(2)}{" "}
+                    {t.moneda === "Pesos" ? "$" : t.moneda}
                   </td>
                   <td>${Number(t.deposito_pesos || 0).toFixed(2)}</td>
                   <td>${Number(t.deposito_usd || 0).toFixed(2)}</td>
@@ -348,6 +434,75 @@ export default function TurnosTable({ turnos, gerentes, tatuadores, jaladores, e
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header d-flex justify-content-between align-items-center">
+          <span className="fw-semibold">Turnos anteriores</span>
+          <span className="text-muted small">
+            {pastTurnos.length} registros
+          </span>
+        </div>
+        <div className="table-responsive">
+          <table className="table table-hover mb-0">
+            <thead className="table-light">
+              <tr>
+                <th>Nombre</th>
+                <th>Gerente</th>
+                <th>Tatuador</th>
+                <th>Jalador</th>
+                <th>Cotización</th>
+                <th>Dep. Pesos</th>
+                <th>Dep. USD</th>
+                <th>Dep. Euros</th>
+                <th>Forma de pago</th>
+                <th>Fecha de cita</th>
+                <th style={{ width: 100 }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pastSlice.length === 0 && (
+                <tr>
+                  <td colSpan={11} className="text-center text-muted py-4">
+                    No hay turnos anteriores
+                  </td>
+                </tr>
+              )}
+              {pastSlice.map((t) => (
+                <tr key={t.id}>
+                  <td>{t.name}</td>
+                  <td>{t.gerente_name}</td>
+                  <td>
+                    {tatuadorLabelById.get(t.tatuador_id) ?? t.tatuador_name}
+                  </td>
+                  <td>{t.jalador_name}</td>
+                  <td>
+                    {Number(t.cotizacion).toFixed(2)}{" "}
+                    {t.moneda === "Pesos" ? "$" : t.moneda}
+                  </td>
+                  <td>${Number(t.deposito_pesos || 0).toFixed(2)}</td>
+                  <td>${Number(t.deposito_usd || 0).toFixed(2)}</td>
+                  <td>${Number(t.deposito_euros || 0).toFixed(2)}</td>
+                  <td>{t.forma_pago}</td>
+                  <td>{formatDateTime(t.fecha_cita)}</td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => openEdit(t)}
+                    >
+                      Editar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <Pagination
+          page={pastPage}
+          total={pastTurnos.length}
+          onChange={setPastPage}
+        />
       </div>
     </>
   );

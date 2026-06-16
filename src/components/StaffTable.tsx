@@ -65,7 +65,7 @@ export default function StaffTable({ staff, role, title }: Props) {
                 <th>Banco</th>
                 <th>Clabe</th>
                 <th>Pago</th>
-                <th style={{ width: 140 }}>Acciones</th>
+                <th style={{ width: 180 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -86,22 +86,24 @@ export default function StaffTable({ staff, role, title }: Props) {
                     {member.cash_only ? (
                       <span className="badge bg-success">Solo efectivo</span>
                     ) : (
-                      ""
+                      <span className="badge bg-warning">Tarjeta</span>
                     )}
                   </td>
                   <td>
-                    <button
-                      className="btn btn-sm btn-outline-secondary me-1"
-                      onClick={() => openEdit(member)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => handleDelete(member.id)}
-                    >
-                      Eliminar
-                    </button>
+                    <div className="d-flex flex-nowrap gap-1">
+                      <button
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => openEdit(member)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => handleDelete(member.id)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
