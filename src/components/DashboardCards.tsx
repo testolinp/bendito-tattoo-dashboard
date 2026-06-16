@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { getIncomeStats, type IncomeStats } from "@/lib/dashboard-actions";
+import { formatDateTime } from "@/lib/datetime-utils";
 
 type Period = "day" | "week" | "month";
 
@@ -24,7 +25,7 @@ function getDateRange(period: Period, offset: number) {
     return {
       start,
       end,
-      label: d.toLocaleDateString("es-AR", {
+      label: d.toLocaleDateString("es-MX", {
         day: "numeric",
         month: "long",
         year: "numeric",
@@ -36,20 +37,20 @@ function getDateRange(period: Period, offset: number) {
     const d = new Date(now);
     d.setDate(d.getDate() + offset * 7);
     const day = d.getDay();
-    const mon = new Date(d);
-    mon.setDate(d.getDate() - ((day + 6) % 7));
-    const sun = new Date(mon);
-    sun.setDate(sun.getDate() + 7);
-    const end = new Date(sun);
-    const label = `${mon.toLocaleDateString("es-AR", { day: "numeric", month: "short" })} - ${new Date(sun.getTime() - 86400000).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" })}`;
-    return { start: mon, end, label };
+    const sun = new Date(d);
+    sun.setDate(d.getDate() - day);
+    const nextSun = new Date(sun);
+    nextSun.setDate(sun.getDate() + 7);
+    const end = new Date(nextSun);
+    const label = `${sun.toLocaleDateString("es-MX", { day: "numeric", month: "short" })} - ${new Date(nextSun.getTime() - 86400000).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}`;
+    return { start: sun, end, label };
   }
 
   if (period === "month") {
     const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
     const start = new Date(d);
     const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-    const label = d.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
+    const label = d.toLocaleDateString("es-MX", { month: "long", year: "numeric" });
     return { start, end, label };
   }
 
@@ -59,19 +60,9 @@ function getDateRange(period: Period, offset: number) {
 const fmt = (n: number) =>
   n === 0
     ? "—"
-    : n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    : n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const formatDateTime = (d: string) => {
-  if (!d) return "";
-  const date = new Date(d);
-  return date.toLocaleString("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+// formatDateTime now imported from datetime-utils
 
 export default function DashboardCards() {
   const [period, setPeriod] = useState<Period>("day");

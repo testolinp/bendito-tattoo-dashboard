@@ -10,6 +10,7 @@ import {
 } from "@/lib/appointments-actions";
 import type { Appointment } from "@/lib/appointments-actions";
 import type { StaffMember } from "@/lib/staff-actions";
+import { naiveToISO, formatDateTime, toDateTimeLocal } from "@/lib/datetime-utils";
 
 const PAGE_SIZE = 10;
 
@@ -85,6 +86,9 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
     const form = e.currentTarget;
     const formData = new FormData(form);
 
+    const fechaCita = formData.get("fecha_cita") as string;
+    if (fechaCita) formData.set("fecha_cita", naiveToISO(fechaCita));
+
     const action = editing ? updateAppointment(formData) : createAppointment(formData);
     const result = await action;
 
@@ -115,24 +119,7 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
     }
   };
 
-  const formatDateTime = (d: string) => {
-    if (!d) return "";
-    const date = new Date(d);
-    return date.toLocaleString("es-AR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const toDateTimeLocal = (d: string) => {
-    if (!d) return "";
-    const date = new Date(d);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  };
+  // formatDateTime and toDateTimeLocal now imported from datetime-utils
 
   function renderTable(title: string, list: Appointment[], page: number, setPage: (p: number) => void, showActions: boolean) {
     const start = page * PAGE_SIZE;

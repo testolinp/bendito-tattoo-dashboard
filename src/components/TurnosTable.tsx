@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { createTurno, updateTurno } from "@/lib/turnos-actions";
 import type { Turno } from "@/lib/turnos-actions";
 import type { StaffMember } from "@/lib/staff-actions";
+import { naiveToISO, formatDateTime, toDateTimeLocal } from "@/lib/datetime-utils";
 
 type Props = {
   turnos: Turno[];
@@ -56,24 +57,7 @@ function Pagination({
   );
 }
 
-const formatDateTime = (d: string) => {
-  if (!d) return "";
-  const date = new Date(d);
-  return date.toLocaleString("es-MX", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const toDateTimeLocal = (d: string) => {
-  if (!d) return "";
-  const date = new Date(d);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-};
+// formatDateTime and toDateTimeLocal now imported from datetime-utils
 
 export default function TurnosTable({
   turnos,
@@ -138,6 +122,9 @@ export default function TurnosTable({
 
     const form = e.currentTarget;
     const formData = new FormData(form);
+
+    const fechaCita = formData.get("fecha_cita") as string;
+    if (fechaCita) formData.set("fecha_cita", naiveToISO(fechaCita));
 
     const action = editing ? updateTurno(formData) : createTurno(formData);
     const result = await action;
