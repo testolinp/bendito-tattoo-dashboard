@@ -22,6 +22,9 @@ export type Turno = {
   pago_usd: number;
   pago_euros: number;
   pago_forma_pago: string;
+  porcentaje_tatuador: number;
+  porcentaje_jalador: number;
+  porcentaje_gerente: number;
   fecha_cita: string;
   appointment_id: number | null;
 };
@@ -52,6 +55,9 @@ export async function createTurno(formData: FormData) {
     p_pago_usd: Number(formData.get("pago_usd") || 0),
     p_pago_euros: Number(formData.get("pago_euros") || 0),
     p_pago_forma_pago: formData.get("pago_forma_pago") as string,
+    p_porcentaje_tatuador: Number(formData.get("porcentaje_tatuador") || 0),
+    p_porcentaje_jalador: Number(formData.get("porcentaje_jalador") || 0),
+    p_porcentaje_gerente: Number(formData.get("porcentaje_gerente") || 0),
     p_fecha_cita: formData.get("fecha_cita") as string,
   });
 
@@ -78,6 +84,9 @@ export async function updateTurno(formData: FormData) {
     p_pago_usd: Number(formData.get("pago_usd") || 0),
     p_pago_euros: Number(formData.get("pago_euros") || 0),
     p_pago_forma_pago: formData.get("pago_forma_pago") as string,
+    p_porcentaje_tatuador: Number(formData.get("porcentaje_tatuador") || 0),
+    p_porcentaje_jalador: Number(formData.get("porcentaje_jalador") || 0),
+    p_porcentaje_gerente: Number(formData.get("porcentaje_gerente") || 0),
     p_fecha_cita: formData.get("fecha_cita") as string,
   });
 

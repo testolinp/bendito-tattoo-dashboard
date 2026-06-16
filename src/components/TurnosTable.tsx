@@ -83,6 +83,10 @@ export default function TurnosTable({
   const [formPagUsd, setFormPagUsd] = useState("");
   const [formPagEur, setFormPagEur] = useState("");
 
+  const [formPorcTat, setFormPorcTat] = useState("");
+  const [formPorcJal, setFormPorcJal] = useState("");
+  const [formPorcGer, setFormPorcGer] = useState("");
+
   const editModalRef = useRef<HTMLDivElement>(null);
   const viewModalRef = useRef<HTMLDivElement>(null);
 
@@ -94,11 +98,13 @@ export default function TurnosTable({
     if (viewing) viewModalRef.current?.focus();
   }, [viewing]);
 
-  const currentDate = new Date();
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Cancun" });
   const upcomingTurnos = turnos.filter(
-    (t) => new Date(t.fecha_cita) >= currentDate,
+    (t) => new Date(t.fecha_cita).toLocaleDateString("en-CA", { timeZone: "America/Cancun" }) >= today,
   );
-  const pastTurnos = turnos.filter((t) => new Date(t.fecha_cita) < currentDate);
+  const pastTurnos = turnos.filter(
+    (t) => new Date(t.fecha_cita).toLocaleDateString("en-CA", { timeZone: "America/Cancun" }) < today,
+  );
   const pastStart = pastPage * PAGE_SIZE;
   const pastSlice = pastTurnos.slice(pastStart, pastStart + PAGE_SIZE);
   const gerenteLabelById = new Map(
@@ -129,6 +135,9 @@ export default function TurnosTable({
         setFormPagPesos(String(turno.pago_pesos ?? ""));
         setFormPagUsd(String(turno.pago_usd ?? ""));
         setFormPagEur(String(turno.pago_euros ?? ""));
+        setFormPorcTat(String(turno.porcentaje_tatuador ?? ""));
+        setFormPorcJal(String(turno.porcentaje_jalador ?? ""));
+        setFormPorcGer(String(turno.porcentaje_gerente ?? ""));
         setModalOpen(true);
       }
     }
@@ -144,6 +153,9 @@ export default function TurnosTable({
     setFormPagPesos("");
     setFormPagUsd("");
     setFormPagEur("");
+    setFormPorcTat("");
+    setFormPorcJal("");
+    setFormPorcGer("");
     setModalOpen(true);
   };
 
@@ -157,6 +169,9 @@ export default function TurnosTable({
     setFormPagPesos(String(t.pago_pesos ?? ""));
     setFormPagUsd(String(t.pago_usd ?? ""));
     setFormPagEur(String(t.pago_euros ?? ""));
+    setFormPorcTat(String(t.porcentaje_tatuador ?? ""));
+    setFormPorcJal(String(t.porcentaje_jalador ?? ""));
+    setFormPorcGer(String(t.porcentaje_gerente ?? ""));
     setModalOpen(true);
   };
 
@@ -493,6 +508,45 @@ export default function TurnosTable({
                         <option value="Tarjeta">Tarjeta</option>
                       </select>
                     </div>
+                    {/* Comisiones */}
+                    <div className="col-12">
+                      <hr className="my-2" />
+                      <h6 className="fw-bold mb-2">Comisiones</h6>
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">% Tatuador</label>
+                      <div className="input-group">
+                        <input name="porcentaje_tatuador" type="number" step="0.01" min="0" max="100" className="form-control" value={formPorcTat} onChange={(e) => setFormPorcTat(e.target.value)} />
+                        <span className="input-group-text">%</span>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">% Jalador</label>
+                      <div className="input-group">
+                        <input name="porcentaje_jalador" type="number" step="0.01" min="0" max="100" className="form-control" value={formPorcJal} onChange={(e) => setFormPorcJal(e.target.value)} />
+                        <span className="input-group-text">%</span>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">% Gerente</label>
+                      <div className="input-group">
+                        <input name="porcentaje_gerente" type="number" step="0.01" min="0" max="100" className="form-control" value={formPorcGer} onChange={(e) => setFormPorcGer(e.target.value)} />
+                        <span className="input-group-text">%</span>
+                      </div>
+                    </div>
+                    {(() => {
+                      const porcTat = Number(formPorcTat || 0);
+                      const porcJal = Number(formPorcJal || 0);
+                      const porcGer = Number(formPorcGer || 0);
+                      const suma = porcTat + porcJal + porcGer;
+                      return suma > 0 && (
+                        <div className="col-12">
+                          <small className={suma <= 100 ? "text-success" : "text-danger"}>
+                            Total comisiones: {suma}% · Tienda: {Math.max(0, 100 - suma)}%
+                          </small>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div className="modal-footer">
@@ -636,6 +690,46 @@ export default function TurnosTable({
                     <label className="form-label text-muted small">Forma de pago</label>
                     <div className="fw-semibold">{viewing.pago_forma_pago}</div>
                   </div>
+                  <div className="col-12">
+                    <hr className="my-2" />
+                    <h6 className="fw-bold mb-2">Comisiones</h6>
+                  </div>
+                  {(() => {
+                    const cotPesos = Number(viewing.cotizacion) * (viewing.moneda === "USD" ? 16 : viewing.moneda === "Euros" ? 19 : 1);
+                    const pTat = Number(viewing.porcentaje_tatuador || 0);
+                    const pJal = Number(viewing.porcentaje_jalador || 0);
+                    const pGer = Number(viewing.porcentaje_gerente || 0);
+                    const totalP = pTat + pJal + pGer;
+                    const mTat = cotPesos * pTat / 100;
+                    const mJal = cotPesos * pJal / 100;
+                    const mGer = cotPesos * pGer / 100;
+                    const shop = cotPesos - mTat - mJal - mGer;
+                    return (
+                      <>
+                        <div className="col-md-3">
+                          <label className="form-label text-muted small">Cotización en pesos</label>
+                          <div className="fw-semibold">${cotPesos.toFixed(2)}</div>
+                        </div>
+                        <div className="col-md-3">
+                          <label className="form-label text-muted small">Tatuador ({pTat}%)</label>
+                          <div className="fw-semibold">${mTat.toFixed(2)}</div>
+                        </div>
+                        <div className="col-md-3">
+                          <label className="form-label text-muted small">Jalador ({pJal}%)</label>
+                          <div className="fw-semibold">${mJal.toFixed(2)}</div>
+                        </div>
+                        <div className="col-md-3">
+                          <label className="form-label text-muted small">Gerente ({pGer}%)</label>
+                          <div className="fw-semibold">${mGer.toFixed(2)}</div>
+                        </div>
+                        <div className="col-12">
+                          <small className={shop >= 0 ? "text-success" : "text-danger"}>
+                            Tienda: ${shop.toFixed(2)} ({Math.max(0, 100 - totalP)}%)
+                          </small>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="modal-footer">

@@ -142,9 +142,9 @@ BEGIN
     FROM (
       SELECT
         a.id, a.name,
-        a.gerente_id, g.name AS gerente_name,
-        a.tatuador_id, t.name AS tatuador_name,
-        a.jalador_id, j.name AS jalador_name,
+        a.gerente_id, COALESCE(NULLIF(g.nickname, ''), g.name) AS gerente_name,
+        a.tatuador_id, COALESCE(NULLIF(t.nickname, ''), t.name) AS tatuador_name,
+        a.jalador_id, COALESCE(NULLIF(j.nickname, ''), j.name) AS jalador_name,
         a.cotizacion, a.moneda,
         a.deposito_pesos, a.deposito_usd, a.deposito_euros,
         a.forma_pago,
@@ -293,9 +293,9 @@ BEGIN
     FROM (
       SELECT
         a.id, a.name,
-        a.gerente_id, g.name AS gerente_name,
-        a.tatuador_id, t.name AS tatuador_name,
-        a.jalador_id, j.name AS jalador_name,
+        a.gerente_id, COALESCE(NULLIF(g.nickname, ''), g.name) AS gerente_name,
+        a.tatuador_id, COALESCE(NULLIF(t.nickname, ''), t.name) AS tatuador_name,
+        a.jalador_id, COALESCE(NULLIF(j.nickname, ''), j.name) AS jalador_name,
         a.cotizacion, a.moneda,
         a.deposito_pesos, a.deposito_usd, a.deposito_euros,
         a.forma_pago,
@@ -415,6 +415,9 @@ CREATE TABLE IF NOT EXISTS turnos (
   pago_usd NUMERIC(10, 2) NOT NULL DEFAULT 0,
   pago_euros NUMERIC(10, 2) NOT NULL DEFAULT 0,
   pago_forma_pago TEXT NOT NULL DEFAULT 'Efectivo' CHECK (pago_forma_pago IN ('Efectivo', 'Deposito', 'Tarjeta')),
+  porcentaje_tatuador NUMERIC(5,2) NOT NULL DEFAULT 0,
+  porcentaje_jalador NUMERIC(5,2) NOT NULL DEFAULT 0,
+  porcentaje_gerente NUMERIC(5,2) NOT NULL DEFAULT 0,
   fecha_cita TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -441,13 +444,14 @@ BEGIN
     FROM (
       SELECT
         t.id, t.name,
-        t.gerente_id, g.name AS gerente_name,
-        t.tatuador_id, tu.name AS tatuador_name,
-        t.jalador_id, j.name AS jalador_name,
+        t.gerente_id, COALESCE(NULLIF(g.nickname, ''), g.name) AS gerente_name,
+        t.tatuador_id, COALESCE(NULLIF(tu.nickname, ''), tu.name) AS tatuador_name,
+        t.jalador_id, COALESCE(NULLIF(j.nickname, ''), j.name) AS jalador_name,
         t.cotizacion, t.moneda,
         t.deposito_pesos, t.deposito_usd, t.deposito_euros,
         t.forma_pago,
         t.pago_pesos, t.pago_usd, t.pago_euros, t.pago_forma_pago,
+        t.porcentaje_tatuador, t.porcentaje_jalador, t.porcentaje_gerente,
         t.fecha_cita,
         t.appointment_id
       FROM turnos t
@@ -480,14 +484,17 @@ CREATE OR REPLACE FUNCTION create_turno(
   p_pago_usd numeric,
   p_pago_euros numeric,
   p_pago_forma_pago text,
+  p_porcentaje_tatuador numeric,
+  p_porcentaje_jalador numeric,
+  p_porcentaje_gerente numeric,
   p_fecha_cita timestamptz
 )
 RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 BEGIN
-  INSERT INTO turnos (name, gerente_id, tatuador_id, jalador_id, cotizacion, moneda, deposito_pesos, deposito_usd, deposito_euros, forma_pago, pago_pesos, pago_usd, pago_euros, pago_forma_pago, fecha_cita)
-  VALUES (p_name, p_gerente_id, p_tatuador_id, p_jalador_id, p_cotizacion, p_moneda, p_deposito_pesos, p_deposito_usd, p_deposito_euros, p_forma_pago, p_pago_pesos, p_pago_usd, p_pago_euros, p_pago_forma_pago, p_fecha_cita);
+  INSERT INTO turnos (name, gerente_id, tatuador_id, jalador_id, cotizacion, moneda, deposito_pesos, deposito_usd, deposito_euros, forma_pago, pago_pesos, pago_usd, pago_euros, pago_forma_pago, porcentaje_tatuador, porcentaje_jalador, porcentaje_gerente, fecha_cita)
+  VALUES (p_name, p_gerente_id, p_tatuador_id, p_jalador_id, p_cotizacion, p_moneda, p_deposito_pesos, p_deposito_usd, p_deposito_euros, p_forma_pago, p_pago_pesos, p_pago_usd, p_pago_euros, p_pago_forma_pago, p_porcentaje_tatuador, p_porcentaje_jalador, p_porcentaje_gerente, p_fecha_cita);
 END;
 $$;
 
@@ -507,6 +514,9 @@ CREATE OR REPLACE FUNCTION update_turno(
   p_pago_usd numeric,
   p_pago_euros numeric,
   p_pago_forma_pago text,
+  p_porcentaje_tatuador numeric,
+  p_porcentaje_jalador numeric,
+  p_porcentaje_gerente numeric,
   p_fecha_cita timestamptz
 )
 RETURNS void
@@ -528,10 +538,13 @@ BEGIN
       pago_usd = p_pago_usd,
       pago_euros = p_pago_euros,
       pago_forma_pago = p_pago_forma_pago,
+      porcentaje_tatuador = p_porcentaje_tatuador,
+      porcentaje_jalador = p_porcentaje_jalador,
+      porcentaje_gerente = p_porcentaje_gerente,
       fecha_cita = p_fecha_cita
   WHERE id = p_id;
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION create_turno(text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, text, timestamptz) TO authenticated;
-GRANT EXECUTE ON FUNCTION update_turno(bigint, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, text, timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION create_turno(text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION update_turno(bigint, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, timestamptz) TO authenticated;

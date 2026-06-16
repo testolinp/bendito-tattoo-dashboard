@@ -235,6 +235,63 @@ export default function DashboardCards() {
             </div>
           )}
 
+          {stats.staffCommissions.length > 0 && (
+            <div className="card mb-3">
+              <div className="card-header">Comisiones</div>
+              <div className="table-responsive">
+                <table className="table table-sm mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Rol</th>
+                      <th>%</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.staffCommissions.map((s, i) => (
+                      <tr key={i}>
+                        <td>{s.name}</td>
+                        <td>{s.role}</td>
+                        <td>{s.pct}%</td>
+                        <td>${fmt(s.total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="table-light">
+                    <tr>
+                      <td className="fw-bold">Total cotizado</td>
+                      <td></td>
+                      <td></td>
+                      <td className="fw-bold">${fmt(stats.totalCotPesos)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className="card mb-3">
+            <div className="card-header">Tienda</div>
+            <div className="card-body">
+              <div className="row g-3">
+                <div className="col-md-4">
+                  <h6 className="card-title mb-1">Pesos</h6>
+                  <p className="h5 mb-0">${fmt(stats.totalShop)}</p>
+                  <small className="text-muted">Restante de cotización en pesos</small>
+                </div>
+                <div className="col-md-4">
+                  <h6 className="card-title mb-1">USD</h6>
+                  <p className="h5 mb-0">${fmt(stats.totalDepUsd + stats.totalPagUsd)}</p>
+                </div>
+                <div className="col-md-4">
+                  <h6 className="card-title mb-1">Euros</h6>
+                  <p className="h5 mb-0">€{fmt(stats.totalDepEuros + stats.totalPagEuros)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {viewing && (
             <div
               className="modal d-block"
@@ -421,6 +478,46 @@ export default function DashboardCards() {
                           {viewing.pago_forma_pago}
                         </div>
                       </div>
+                      <div className="col-12">
+                        <hr className="my-2" />
+                        <h6 className="fw-bold mb-2">Comisiones</h6>
+                      </div>
+                      {(() => {
+                        const cotPesos = Number(viewing.cotizacion) * (viewing.moneda === "USD" ? 16 : viewing.moneda === "Euros" ? 19 : 1);
+                        const pTat = Number(viewing.porcentaje_tatuador || 0);
+                        const pJal = Number(viewing.porcentaje_jalador || 0);
+                        const pGer = Number(viewing.porcentaje_gerente || 0);
+                        const totalP = pTat + pJal + pGer;
+                        const mTat = cotPesos * pTat / 100;
+                        const mJal = cotPesos * pJal / 100;
+                        const mGer = cotPesos * pGer / 100;
+                        const shop = cotPesos - mTat - mJal - mGer;
+                        return (
+                          <>
+                            <div className="col-md-3">
+                              <label className="form-label text-muted small">Cotización en pesos</label>
+                              <div className="fw-semibold">${cotPesos.toFixed(2)}</div>
+                            </div>
+                            <div className="col-md-3">
+                              <label className="form-label text-muted small">Tatuador ({pTat}%)</label>
+                              <div className="fw-semibold">${mTat.toFixed(2)}</div>
+                            </div>
+                            <div className="col-md-3">
+                              <label className="form-label text-muted small">Jalador ({pJal}%)</label>
+                              <div className="fw-semibold">${mJal.toFixed(2)}</div>
+                            </div>
+                            <div className="col-md-3">
+                              <label className="form-label text-muted small">Gerente ({pGer}%)</label>
+                              <div className="fw-semibold">${mGer.toFixed(2)}</div>
+                            </div>
+                            <div className="col-12">
+                              <small className={shop >= 0 ? "text-success" : "text-danger"}>
+                                Tienda: ${shop.toFixed(2)} ({Math.max(0, 100 - totalP)}%)
+                              </small>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                   <div className="modal-footer">

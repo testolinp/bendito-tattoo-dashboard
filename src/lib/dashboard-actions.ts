@@ -5,8 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 export type TurnoRow = {
   id: number;
   name: string;
+  gerente_id: number;
   gerente_name: string;
+  tatuador_id: number;
   tatuador_name: string;
+  jalador_id: number;
   jalador_name: string;
   fecha_cita: string;
   cotizacion: number;
@@ -19,6 +22,16 @@ export type TurnoRow = {
   pago_usd: number;
   pago_euros: number;
   pago_forma_pago: string;
+  porcentaje_tatuador: number;
+  porcentaje_jalador: number;
+  porcentaje_gerente: number;
+};
+
+export type StaffCommissionRow = {
+  name: string;
+  role: string;
+  total: number;
+  pct: number;
 };
 
 export type IncomeStats = {
@@ -33,6 +46,9 @@ export type IncomeStats = {
   totalPagPesos: number;
   totalPagUsd: number;
   totalPagEuros: number;
+  totalShop: number;
+  totalCotPesos: number;
+  staffCommissions: StaffCommissionRow[];
   dailyBreakdown: {
     date: string;
     count: number;
@@ -50,11 +66,13 @@ export async function getIncomeStats(start: string, end: string) {
     .from("turnos")
     .select(
       `id, name, fecha_cita, cotizacion, moneda,
+       gerente_id, tatuador_id, jalador_id,
        deposito_pesos, deposito_usd, deposito_euros,
        forma_pago, pago_pesos, pago_usd, pago_euros, pago_forma_pago,
-       gerente:staff!gerente_id(name),
-       tatuador:staff!tatuador_id(name),
-       jalador:staff!jalador_id(name)`
+       porcentaje_tatuador, porcentaje_jalador, porcentaje_gerente,
+        gerente:staff!gerente_id(name, nickname),
+        tatuador:staff!tatuador_id(name, nickname),
+        jalador:staff!jalador_id(name, nickname)`
     )
     .gte("fecha_cita", start)
     .lt("fecha_cita", end)
@@ -72,6 +90,9 @@ export async function getIncomeStats(start: string, end: string) {
   let totalPagPesos = 0;
   let totalPagUsd = 0;
   let totalPagEuros = 0;
+  let totalCotPesos = 0;
+  let totalShop = 0;
+  const staffMap = new Map<string, { name: string; role: string; total: number; baseAmount: number }>();
 
   const dayMap = new Map<
     string,
@@ -100,6 +121,40 @@ export async function getIncomeStats(start: string, end: string) {
     totalPagUsd += pu;
     totalPagEuros += pe;
 
+    const rate = t.moneda === "USD" ? 16 : t.moneda === "Euros" ? 19 : 1;
+    const quotePesos = cot * rate;
+    totalCotPesos += quotePesos;
+
+    const pTat = Number(t.porcentaje_tatuador || 0);
+    const pJal = Number(t.porcentaje_jalador || 0);
+    const pGer = Number(t.porcentaje_gerente || 0);
+    const mTat = quotePesos * pTat / 100;
+    const mJal = quotePesos * pJal / 100;
+    const mGer = quotePesos * pGer / 100;
+    if (t.moneda === "Pesos") {
+      totalShop += quotePesos - mTat - mJal - mGer;
+    } else {
+      // Shop keeps the foreign currency, but pays staff commissions from pesos
+      totalShop -= mTat + mJal + mGer;
+    }
+
+    const gerenteName = extractName(t.gerente);
+    const tatuadorName = extractName(t.tatuador);
+    const jaladorName = extractName(t.jalador);
+
+    const addToStaff = (key: string, name: string, role: string, amount: number, pct: number) => {
+      if (!name || amount <= 0) return;
+      const existing = staffMap.get(key);
+      if (existing) {
+        existing.total += amount;
+        existing.baseAmount += quotePesos;
+      } else staffMap.set(key, { name, role, total: amount, baseAmount: quotePesos });
+    };
+
+    addToStaff(`ger_${t.gerente_id}`, gerenteName, "Gerente", mGer, pGer);
+    addToStaff(`tat_${t.tatuador_id}`, tatuadorName, "Tatuador", mTat, pTat);
+    addToStaff(`jal_${t.jalador_id}`, jaladorName, "Jalador", mJal, pJal);
+
     const day = t.fecha_cita.split("T")[0];
     const entry = dayMap.get(day) || {
       count: 0,
@@ -116,15 +171,18 @@ export async function getIncomeStats(start: string, end: string) {
     dayMap.set(day, entry);
 
     function extractName(val: unknown): string {
-      if (Array.isArray(val)) return (val[0] as { name?: string })?.name ?? "";
-      if (val && typeof val === "object") return (val as { name?: string }).name ?? "";
+      if (Array.isArray(val)) return (val[0] as { nickname?: string; name?: string })?.nickname || (val[0] as { name?: string })?.name || "";
+      if (val && typeof val === "object") return (val as { nickname?: string })?.nickname || (val as { name?: string })?.name || "";
       return "";
     }
     turnos.push({
       id: t.id,
       name: t.name,
+      gerente_id: Number(t.gerente_id),
       gerente_name: extractName(t.gerente),
+      tatuador_id: Number(t.tatuador_id),
       tatuador_name: extractName(t.tatuador),
+      jalador_id: Number(t.jalador_id),
       jalador_name: extractName(t.jalador),
       fecha_cita: t.fecha_cita,
       cotizacion: cot,
@@ -137,6 +195,9 @@ export async function getIncomeStats(start: string, end: string) {
       pago_usd: pu,
       pago_euros: pe,
       pago_forma_pago: t.pago_forma_pago ?? "",
+      porcentaje_tatuador: Number(t.porcentaje_tatuador ?? 0),
+      porcentaje_jalador: Number(t.porcentaje_jalador ?? 0),
+      porcentaje_gerente: Number(t.porcentaje_gerente ?? 0),
     });
   }
 
@@ -156,6 +217,16 @@ export async function getIncomeStats(start: string, end: string) {
     totalPagPesos,
     totalPagUsd,
     totalPagEuros,
+    totalShop,
+    totalCotPesos,
+    staffCommissions: Array.from(staffMap.entries())
+      .map(([, v]) => ({
+        name: v.name,
+        role: v.role,
+        total: v.total,
+        pct: v.baseAmount > 0 ? Math.round(v.total / v.baseAmount * 100 * 100) / 100 : 0,
+      }))
+      .sort((a, b) => b.total - a.total),
     dailyBreakdown,
     turnos,
   };
