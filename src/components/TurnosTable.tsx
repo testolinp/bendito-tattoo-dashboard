@@ -70,8 +70,18 @@ export default function TurnosTable({
   const pathname = usePathname();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Turno | null>(null);
+  const [viewing, setViewing] = useState<Turno | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [pastPage, setPastPage] = useState(0);
+
+  const [formCotizacion, setFormCotizacion] = useState("");
+  const [formMoneda, setFormMoneda] = useState("Pesos");
+  const [formDepPesos, setFormDepPesos] = useState("");
+  const [formDepUsd, setFormDepUsd] = useState("");
+  const [formDepEur, setFormDepEur] = useState("");
+  const [formPagPesos, setFormPagPesos] = useState("");
+  const [formPagUsd, setFormPagUsd] = useState("");
+  const [formPagEur, setFormPagEur] = useState("");
 
   const currentDate = new Date();
   const upcomingTurnos = turnos.filter(
@@ -100,6 +110,14 @@ export default function TurnosTable({
       const turno = turnos.find((t) => t.id === editTurnoId);
       if (turno) {
         setEditing(turno);
+        setFormCotizacion(String(turno.cotizacion ?? ""));
+        setFormMoneda(turno.moneda ?? "Pesos");
+        setFormDepPesos(String(turno.deposito_pesos ?? ""));
+        setFormDepUsd(String(turno.deposito_usd ?? ""));
+        setFormDepEur(String(turno.deposito_euros ?? ""));
+        setFormPagPesos(String(turno.pago_pesos ?? ""));
+        setFormPagUsd(String(turno.pago_usd ?? ""));
+        setFormPagEur(String(turno.pago_euros ?? ""));
         setModalOpen(true);
       }
     }
@@ -107,12 +125,36 @@ export default function TurnosTable({
 
   const openCreate = () => {
     setEditing(null);
+    setFormCotizacion("");
+    setFormMoneda("Pesos");
+    setFormDepPesos("");
+    setFormDepUsd("");
+    setFormDepEur("");
+    setFormPagPesos("");
+    setFormPagUsd("");
+    setFormPagEur("");
     setModalOpen(true);
   };
 
   const openEdit = (t: Turno) => {
     setEditing(t);
+    setFormCotizacion(String(t.cotizacion ?? ""));
+    setFormMoneda(t.moneda ?? "Pesos");
+    setFormDepPesos(String(t.deposito_pesos ?? ""));
+    setFormDepUsd(String(t.deposito_usd ?? ""));
+    setFormDepEur(String(t.deposito_euros ?? ""));
+    setFormPagPesos(String(t.pago_pesos ?? ""));
+    setFormPagUsd(String(t.pago_usd ?? ""));
+    setFormPagEur(String(t.pago_euros ?? ""));
     setModalOpen(true);
+  };
+
+  const openView = (t: Turno) => {
+    setViewing(t);
+  };
+
+  const closeView = () => {
+    setViewing(null);
   };
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -230,6 +272,23 @@ export default function TurnosTable({
                       </select>
                     </div>
                     <div className="col-md-6">
+                      <label className="form-label">Fecha de la cita</label>
+                      <input
+                        name="fecha_cita"
+                        type="datetime-local"
+                        className="form-control"
+                        defaultValue={
+                          editing ? toDateTimeLocal(editing.fecha_cita) : ""
+                        }
+                        required
+                      />
+                    </div>
+                    {/* Cotización */}
+                    <div className="col-12">
+                      <hr className="my-2" />
+                      <h6 className="fw-bold mb-2">Cotización</h6>
+                    </div>
+                    <div className="col-md-6">
                       <label className="form-label">Cotización</label>
                       <div className="input-group">
                         <input
@@ -238,38 +297,43 @@ export default function TurnosTable({
                           step="0.01"
                           min="0"
                           className="form-control"
-                          defaultValue={editing?.cotizacion ?? ""}
+                          value={formCotizacion}
+                          onChange={(e) => setFormCotizacion(e.target.value)}
                           required
                         />
                         <select
                           name="moneda"
                           className="form-select"
                           style={{ maxWidth: 110 }}
-                          defaultValue={editing?.moneda ?? "Pesos"}
+                          value={formMoneda}
+                          onChange={(e) => setFormMoneda(e.target.value)}
                           required
                         >
                           <option value="Pesos">Pesos</option>
                           <option value="USD">USD</option>
                           <option value="Euros">Euros</option>
-                        </select>
+                      </select>
+                      {editing && <input type="hidden" name="forma_pago" value={editing.forma_pago} />}
+                    </div>
+                    </div>
+                    <div className="col-md-6 d-flex align-items-end pb-1">
+                      <div className="fw-semibold fs-4">
+                        {(() => {
+                          const q = Number(formCotizacion || 0);
+                          const r = formMoneda === "USD" ? 16 : formMoneda === "Euros" ? 19 : 1;
+                          const qPesos = q * r;
+                          const p = Number(formDepPesos || 0) + Number(formDepUsd || 0) * 16 + Number(formDepEur || 0) * 19 + Number(formPagPesos || 0) + Number(formPagUsd || 0) * 16 + Number(formPagEur || 0) * 19;
+                          const rem = Math.max(0, qPesos - p);
+                          return `Falta pagar: $${rem.toFixed(2)}`;
+                        })()}
                       </div>
                     </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Forma de pago</label>
-                      <select
-                        name="forma_pago"
-                        className="form-select"
-                        defaultValue={editing?.forma_pago ?? ""}
-                        required
-                      >
-                        <option value="">Seleccionar</option>
-                        <option value="Efectivo">Efectivo</option>
-                        <option value="Deposito">Depósito</option>
-                        <option value="Tarjeta">Tarjeta</option>
-                      </select>
+                    {/* Depósito */}
+                    <div className="col-12">
+                      <hr className="my-2" />
+                      <h6 className="fw-bold mb-2">Depósito</h6>
                     </div>
                     <div className="col-12">
-                      <label className="form-label mb-2">Depósito</label>
                       <div className="row g-2">
                         <div className="col-md-4">
                           <div className="input-group">
@@ -281,7 +345,11 @@ export default function TurnosTable({
                               min="0"
                               className="form-control"
                               placeholder="Pesos"
-                              defaultValue={editing?.deposito_pesos ?? ""}
+                              value={formDepPesos}
+                              onChange={(e) => setFormDepPesos(e.target.value)}
+                              readOnly={!!editing}
+                              tabIndex={editing ? -1 : 0}
+                              style={editing ? { outline: "none", boxShadow: "none" } : undefined}
                             />
                           </div>
                         </div>
@@ -295,7 +363,11 @@ export default function TurnosTable({
                               min="0"
                               className="form-control"
                               placeholder="USD"
-                              defaultValue={editing?.deposito_usd ?? ""}
+                              value={formDepUsd}
+                              onChange={(e) => setFormDepUsd(e.target.value)}
+                              readOnly={!!editing}
+                              tabIndex={editing ? -1 : 0}
+                              style={editing ? { outline: "none", boxShadow: "none" } : undefined}
                             />
                           </div>
                         </div>
@@ -309,23 +381,101 @@ export default function TurnosTable({
                               min="0"
                               className="form-control"
                               placeholder="Euros"
-                              defaultValue={editing?.deposito_euros ?? ""}
+                              value={formDepEur}
+                              onChange={(e) => setFormDepEur(e.target.value)}
+                              readOnly={!!editing}
+                              tabIndex={editing ? -1 : 0}
+                              style={editing ? { outline: "none", boxShadow: "none" } : undefined}
                             />
                           </div>
                         </div>
                       </div>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Fecha de la cita</label>
-                      <input
-                        name="fecha_cita"
-                        type="datetime-local"
-                        className="form-control"
-                        defaultValue={
-                          editing ? toDateTimeLocal(editing.fecha_cita) : ""
-                        }
+                      <label className="form-label">Forma de pago</label>
+                      <select
+                        name="forma_pago"
+                        className="form-select"
+                        defaultValue={editing?.forma_pago ?? ""}
                         required
-                      />
+                        disabled={!!editing}
+                        tabIndex={editing ? -1 : 0}
+                        style={editing ? { outline: "none", boxShadow: "none" } : undefined}
+                      >
+                        <option value="">Seleccionar</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Deposito">Depósito</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                      </select>
+                      {editing && <input type="hidden" name="forma_pago" value={editing.forma_pago} />}
+                    </div>
+                    {/* Pago */}
+                    <div className="col-12">
+                      <hr className="my-2" />
+                      <h6 className="fw-bold mb-2">Pago</h6>
+                    </div>
+                    <div className="col-12">
+                      <div className="row g-2">
+                        <div className="col-md-4">
+                          <div className="input-group">
+                            <span className="input-group-text">$</span>
+                            <input
+                              name="pago_pesos"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              className="form-control"
+                              placeholder="Pesos"
+                              value={formPagPesos}
+                              onChange={(e) => setFormPagPesos(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="col-md-4">
+                          <div className="input-group">
+                            <span className="input-group-text">USD</span>
+                            <input
+                              name="pago_usd"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              className="form-control"
+                              placeholder="USD"
+                              value={formPagUsd}
+                              onChange={(e) => setFormPagUsd(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="col-md-4">
+                          <div className="input-group">
+                            <span className="input-group-text">€</span>
+                            <input
+                              name="pago_euros"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              className="form-control"
+                              placeholder="Euros"
+                              value={formPagEur}
+                              onChange={(e) => setFormPagEur(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Forma de pago</label>
+                      <select
+                        name="pago_forma_pago"
+                        className="form-select"
+                        defaultValue={editing?.pago_forma_pago ?? ""}
+                        required
+                      >
+                        <option value="">Seleccionar</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Deposito">Depósito</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -355,6 +505,121 @@ export default function TurnosTable({
         </div>
       )}
 
+      {viewing && (
+        <div
+          className="modal d-block"
+          tabIndex={-1}
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Turno</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={closeView}
+                />
+              </div>
+              <div className="modal-body">
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small">Nombre</label>
+                    <div className="fw-semibold">{viewing.name}</div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small">Gerente</label>
+                    <div className="fw-semibold">{gerenteLabelById.get(viewing.gerente_id) ?? viewing.gerente_name}</div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small">Tatuador</label>
+                    <div className="fw-semibold">{tatuadorLabelById.get(viewing.tatuador_id) ?? viewing.tatuador_name}</div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small">Jalador</label>
+                    <div className="fw-semibold">{jaladorLabelById.get(viewing.jalador_id) ?? viewing.jalador_name}</div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small">Fecha de la cita</label>
+                    <div className="fw-semibold">{formatDateTime(viewing.fecha_cita)}</div>
+                  </div>
+                  <div className="col-12">
+                    <hr className="my-2" />
+                    <h6 className="fw-bold mb-2">Cotización</h6>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small">Cotización</label>
+                    <div className="fw-semibold">
+                      {Number(viewing.cotizacion).toFixed(2)}{" "}
+                      {viewing.moneda === "Pesos" ? "$" : viewing.moneda}
+                    </div>
+                    <div className="mt-1 fw-semibold fs-4">
+                      {(() => {
+                        const q = Number(viewing.cotizacion);
+                        const r = viewing.moneda === "USD" ? 16 : viewing.moneda === "Euros" ? 19 : 1;
+                        const qPesos = q * r;
+                        const p = Number(viewing.deposito_pesos || 0) + Number(viewing.deposito_usd || 0) * 16 + Number(viewing.deposito_euros || 0) * 19 + Number(viewing.pago_pesos || 0) + Number(viewing.pago_usd || 0) * 16 + Number(viewing.pago_euros || 0) * 19;
+                        const rem = Math.max(0, qPesos - p);
+                        return `Falta pagar: $${rem.toFixed(2)}`;
+                      })()}
+                    </div>
+                  </div>
+                  <div className="col-12">
+                    <hr className="my-2" />
+                    <h6 className="fw-bold mb-2">Depósito</h6>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small">Pesos</label>
+                    <div className="fw-semibold">${Number(viewing.deposito_pesos || 0).toFixed(2)}</div>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small">USD</label>
+                    <div className="fw-semibold">${Number(viewing.deposito_usd || 0).toFixed(2)}</div>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small">Euros</label>
+                    <div className="fw-semibold">${Number(viewing.deposito_euros || 0).toFixed(2)}</div>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small">Forma de pago</label>
+                    <div className="fw-semibold">{viewing.forma_pago}</div>
+                  </div>
+                  <div className="col-12">
+                    <hr className="my-2" />
+                    <h6 className="fw-bold mb-2">Pago</h6>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small">Pesos</label>
+                    <div className="fw-semibold">${Number(viewing.pago_pesos || 0).toFixed(2)}</div>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small">USD</label>
+                    <div className="fw-semibold">${Number(viewing.pago_usd || 0).toFixed(2)}</div>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small">Euros</label>
+                    <div className="fw-semibold">${Number(viewing.pago_euros || 0).toFixed(2)}</div>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small">Forma de pago</label>
+                    <div className="fw-semibold">{viewing.pago_forma_pago}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={closeView}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="card mb-3">
         <div className="card-header d-flex justify-content-between align-items-center">
           <span className="fw-semibold">Turnos actuales y próximos</span>
@@ -371,18 +636,14 @@ export default function TurnosTable({
                 <th>Tatuador</th>
                 <th>Jalador</th>
                 <th>Cotización</th>
-                <th>Dep. Pesos</th>
-                <th>Dep. USD</th>
-                <th>Dep. Euros</th>
-                <th>Forma de pago</th>
                 <th>Fecha de cita</th>
-                <th style={{ width: 100 }}>Acciones</th>
+                <th style={{ width: 160 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {upcomingTurnos.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="text-center text-muted py-4">
+                  <td colSpan={7} className="text-center text-muted py-4">
                     No hay turnos actuales o próximos
                   </td>
                 </tr>
@@ -403,12 +664,14 @@ export default function TurnosTable({
                     {Number(t.cotizacion).toFixed(2)}{" "}
                     {t.moneda === "Pesos" ? "$" : t.moneda}
                   </td>
-                  <td>${Number(t.deposito_pesos || 0).toFixed(2)}</td>
-                  <td>${Number(t.deposito_usd || 0).toFixed(2)}</td>
-                  <td>${Number(t.deposito_euros || 0).toFixed(2)}</td>
-                  <td>{t.forma_pago}</td>
                   <td>{formatDateTime(t.fecha_cita)}</td>
                   <td>
+                    <button
+                      className="btn btn-sm btn-outline-info me-1"
+                      onClick={() => openView(t)}
+                    >
+                      Ver
+                    </button>
                     <button
                       className="btn btn-sm btn-outline-secondary"
                       onClick={() => openEdit(t)}
@@ -439,18 +702,14 @@ export default function TurnosTable({
                 <th>Tatuador</th>
                 <th>Jalador</th>
                 <th>Cotización</th>
-                <th>Dep. Pesos</th>
-                <th>Dep. USD</th>
-                <th>Dep. Euros</th>
-                <th>Forma de pago</th>
                 <th>Fecha de cita</th>
-                <th style={{ width: 100 }}>Acciones</th>
+                <th style={{ width: 160 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {pastSlice.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="text-center text-muted py-4">
+                  <td colSpan={7} className="text-center text-muted py-4">
                     No hay turnos anteriores
                   </td>
                 </tr>
@@ -467,12 +726,14 @@ export default function TurnosTable({
                     {Number(t.cotizacion).toFixed(2)}{" "}
                     {t.moneda === "Pesos" ? "$" : t.moneda}
                   </td>
-                  <td>${Number(t.deposito_pesos || 0).toFixed(2)}</td>
-                  <td>${Number(t.deposito_usd || 0).toFixed(2)}</td>
-                  <td>${Number(t.deposito_euros || 0).toFixed(2)}</td>
-                  <td>{t.forma_pago}</td>
                   <td>{formatDateTime(t.fecha_cita)}</td>
                   <td>
+                    <button
+                      className="btn btn-sm btn-outline-info me-1"
+                      onClick={() => openView(t)}
+                    >
+                      Ver
+                    </button>
                     <button
                       className="btn btn-sm btn-outline-secondary"
                       onClick={() => openEdit(t)}

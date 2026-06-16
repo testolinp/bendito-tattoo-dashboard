@@ -241,13 +241,15 @@ BEGIN
   INSERT INTO turnos (
     appointment_id, name, gerente_id, tatuador_id, jalador_id,
     cotizacion, moneda, deposito_pesos, deposito_usd, deposito_euros,
-    forma_pago, fecha_cita
+    forma_pago, pago_pesos, pago_usd, pago_euros, pago_forma_pago, fecha_cita
   ) VALUES (
     v_appointment.id, v_appointment.name,
     v_appointment.gerente_id, v_appointment.tatuador_id, v_appointment.jalador_id,
     v_appointment.cotizacion, v_appointment.moneda,
     v_appointment.deposito_pesos, v_appointment.deposito_usd, v_appointment.deposito_euros,
-    v_appointment.forma_pago, v_appointment.fecha_cita
+    v_appointment.forma_pago,
+    0, 0, 0, 'Efectivo',
+    v_appointment.fecha_cita
   )
   RETURNING id INTO v_turno_id;
 
@@ -409,6 +411,10 @@ CREATE TABLE IF NOT EXISTS turnos (
   deposito_usd NUMERIC(10, 2) NOT NULL DEFAULT 0,
   deposito_euros NUMERIC(10, 2) NOT NULL DEFAULT 0,
   forma_pago TEXT NOT NULL CHECK (forma_pago IN ('Efectivo', 'Deposito', 'Tarjeta')),
+  pago_pesos NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  pago_usd NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  pago_euros NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  pago_forma_pago TEXT NOT NULL DEFAULT 'Efectivo' CHECK (pago_forma_pago IN ('Efectivo', 'Deposito', 'Tarjeta')),
   fecha_cita TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -441,6 +447,7 @@ BEGIN
         t.cotizacion, t.moneda,
         t.deposito_pesos, t.deposito_usd, t.deposito_euros,
         t.forma_pago,
+        t.pago_pesos, t.pago_usd, t.pago_euros, t.pago_forma_pago,
         t.fecha_cita,
         t.appointment_id
       FROM turnos t
@@ -469,14 +476,18 @@ CREATE OR REPLACE FUNCTION create_turno(
   p_deposito_usd numeric,
   p_deposito_euros numeric,
   p_forma_pago text,
+  p_pago_pesos numeric,
+  p_pago_usd numeric,
+  p_pago_euros numeric,
+  p_pago_forma_pago text,
   p_fecha_cita timestamptz
 )
 RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 BEGIN
-  INSERT INTO turnos (name, gerente_id, tatuador_id, jalador_id, cotizacion, moneda, deposito_pesos, deposito_usd, deposito_euros, forma_pago, fecha_cita)
-  VALUES (p_name, p_gerente_id, p_tatuador_id, p_jalador_id, p_cotizacion, p_moneda, p_deposito_pesos, p_deposito_usd, p_deposito_euros, p_forma_pago, p_fecha_cita);
+  INSERT INTO turnos (name, gerente_id, tatuador_id, jalador_id, cotizacion, moneda, deposito_pesos, deposito_usd, deposito_euros, forma_pago, pago_pesos, pago_usd, pago_euros, pago_forma_pago, fecha_cita)
+  VALUES (p_name, p_gerente_id, p_tatuador_id, p_jalador_id, p_cotizacion, p_moneda, p_deposito_pesos, p_deposito_usd, p_deposito_euros, p_forma_pago, p_pago_pesos, p_pago_usd, p_pago_euros, p_pago_forma_pago, p_fecha_cita);
 END;
 $$;
 
@@ -492,6 +503,10 @@ CREATE OR REPLACE FUNCTION update_turno(
   p_deposito_usd numeric,
   p_deposito_euros numeric,
   p_forma_pago text,
+  p_pago_pesos numeric,
+  p_pago_usd numeric,
+  p_pago_euros numeric,
+  p_pago_forma_pago text,
   p_fecha_cita timestamptz
 )
 RETURNS void
@@ -509,10 +524,14 @@ BEGIN
       deposito_usd = p_deposito_usd,
       deposito_euros = p_deposito_euros,
       forma_pago = p_forma_pago,
+      pago_pesos = p_pago_pesos,
+      pago_usd = p_pago_usd,
+      pago_euros = p_pago_euros,
+      pago_forma_pago = p_pago_forma_pago,
       fecha_cita = p_fecha_cita
   WHERE id = p_id;
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION create_turno(text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, timestamptz) TO authenticated;
-GRANT EXECUTE ON FUNCTION update_turno(bigint, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION create_turno(text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, text, timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION update_turno(bigint, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, text, timestamptz) TO authenticated;

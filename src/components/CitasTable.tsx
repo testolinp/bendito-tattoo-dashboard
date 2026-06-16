@@ -52,9 +52,16 @@ function Pagination({ page, total, onChange }: { page: number; total: number; on
 export default function CitasTable({ appointments, gerentes, tatuadores, jaladores }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
+  const [viewing, setViewing] = useState<Appointment | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [pendingPage, setPendingPage] = useState(0);
   const [historyPage, setHistoryPage] = useState(0);
+
+  const [formCotizacion, setFormCotizacion] = useState("");
+  const [formMoneda, setFormMoneda] = useState("Pesos");
+  const [formDepPesos, setFormDepPesos] = useState("");
+  const [formDepUsd, setFormDepUsd] = useState("");
+  const [formDepEur, setFormDepEur] = useState("");
 
   const pending = appointments.filter((a) => a.status === "pendiente");
   const history = appointments.filter((a) => a.status === "concretada" || a.status === "cancelada");
@@ -70,12 +77,30 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
 
   const openCreate = () => {
     setEditing(null);
+    setFormCotizacion("");
+    setFormMoneda("Pesos");
+    setFormDepPesos("");
+    setFormDepUsd("");
+    setFormDepEur("");
     setModalOpen(true);
   };
 
   const openEdit = (a: Appointment) => {
     setEditing(a);
+    setFormCotizacion(String(a.cotizacion ?? ""));
+    setFormMoneda(a.moneda ?? "Pesos");
+    setFormDepPesos(String(a.deposito_pesos ?? ""));
+    setFormDepUsd(String(a.deposito_usd ?? ""));
+    setFormDepEur(String(a.deposito_euros ?? ""));
     setModalOpen(true);
+  };
+
+  const openView = (a: Appointment) => {
+    setViewing(a);
+  };
+
+  const closeView = () => {
+    setViewing(null);
   };
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -140,19 +165,15 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                 <th>Tatuador</th>
                 <th>Jalador</th>
                 <th>Cotización</th>
-                <th>Dep. Pesos</th>
-                <th>Dep. USD</th>
-                <th>Dep. Euros</th>
-                <th>Forma de pago</th>
                 <th>Fecha de cita</th>
                 <th>Estado</th>
-                {showActions && <th style={{ width: 180 }}>Acciones</th>}
+                {showActions && <th style={{ width: 220 }}>Acciones</th>}
               </tr>
             </thead>
             <tbody>
               {slice.length === 0 && (
                 <tr>
-                  <td colSpan={showActions ? 12 : 11} className="text-center text-muted py-4">
+                  <td colSpan={showActions ? 8 : 7} className="text-center text-muted py-4">
                     No hay citas {title.toLowerCase()}
                   </td>
                 </tr>
@@ -164,10 +185,6 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                   <td>{tatuadorLabelById.get(a.tatuador_id) ?? a.tatuador_name}</td>
                   <td>{jaladorLabelById.get(a.jalador_id) ?? a.jalador_name}</td>
                   <td>{Number(a.cotizacion).toFixed(2)} {a.moneda === "Pesos" ? "$" : a.moneda}</td>
-                  <td>${Number(a.deposito_pesos || 0).toFixed(2)}</td>
-                  <td>${Number(a.deposito_usd || 0).toFixed(2)}</td>
-                  <td>${Number(a.deposito_euros || 0).toFixed(2)}</td>
-                  <td>{a.forma_pago}</td>
                   <td>{formatDateTime(a.fecha_cita)}</td>
                   <td>
                     <span className={`badge ${statusColors[a.status] || "bg-secondary"}`}>
@@ -176,6 +193,9 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                   </td>
                   {showActions && (
                     <td>
+                      <button className="btn btn-sm btn-outline-info me-1" onClick={() => openView(a)}>
+                        Ver
+                      </button>
                       <button className="btn btn-sm btn-outline-secondary me-1" onClick={() => openEdit(a)}>
                         Editar
                       </button>
@@ -248,14 +268,62 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                       </select>
                     </div>
                     <div className="col-md-6">
+                      <label className="form-label">Fecha de la cita</label>
+                      <input name="fecha_cita" type="datetime-local" className="form-control" defaultValue={editing ? toDateTimeLocal(editing.fecha_cita) : ""} required />
+                    </div>
+                    {/* Cotización */}
+                    <div className="col-12">
+                      <hr className="my-2" />
+                      <h6 className="fw-bold mb-2">Cotización</h6>
+                    </div>
+                    <div className="col-md-6">
                       <label className="form-label">Cotización</label>
                       <div className="input-group">
-                        <input name="cotizacion" type="number" step="0.01" min="0" className="form-control" defaultValue={editing?.cotizacion ?? ""} required />
-                        <select name="moneda" className="form-select" style={{ maxWidth: 110 }} defaultValue={editing?.moneda ?? "Pesos"} required>
+                        <input name="cotizacion" type="number" step="0.01" min="0" className="form-control" value={formCotizacion} onChange={(e) => setFormCotizacion(e.target.value)} required />
+                        <select name="moneda" className="form-select" style={{ maxWidth: 110 }} value={formMoneda} onChange={(e) => setFormMoneda(e.target.value)} required>
                           <option value="Pesos">Pesos</option>
                           <option value="USD">USD</option>
                           <option value="Euros">Euros</option>
                         </select>
+                      </div>
+                    </div>
+                    <div className="col-md-6 d-flex align-items-end pb-1">
+                      <div className="fw-semibold fs-4">
+                        {(() => {
+                          const q = Number(formCotizacion || 0);
+                          const r = formMoneda === "USD" ? 16 : formMoneda === "Euros" ? 19 : 1;
+                          const qPesos = q * r;
+                          const p = Number(formDepPesos || 0) + Number(formDepUsd || 0) * 16 + Number(formDepEur || 0) * 19;
+                          const rem = Math.max(0, qPesos - p);
+                          return `Falta pagar: $${rem.toFixed(2)}`;
+                        })()}
+                      </div>
+                    </div>
+                    {/* Depósito */}
+                    <div className="col-12">
+                      <hr className="my-2" />
+                      <h6 className="fw-bold mb-2">Depósito</h6>
+                    </div>
+                    <div className="col-12">
+                      <div className="row g-2">
+                        <div className="col-md-4">
+                          <div className="input-group">
+                            <span className="input-group-text">$</span>
+                            <input name="deposito_pesos" type="number" step="0.01" min="0" className="form-control" placeholder="Pesos" value={formDepPesos} onChange={(e) => setFormDepPesos(e.target.value)} />
+                          </div>
+                        </div>
+                        <div className="col-md-4">
+                          <div className="input-group">
+                            <span className="input-group-text">USD</span>
+                            <input name="deposito_usd" type="number" step="0.01" min="0" className="form-control" placeholder="USD" value={formDepUsd} onChange={(e) => setFormDepUsd(e.target.value)} />
+                          </div>
+                        </div>
+                        <div className="col-md-4">
+                          <div className="input-group">
+                            <span className="input-group-text">€</span>
+                            <input name="deposito_euros" type="number" step="0.01" min="0" className="form-control" placeholder="Euros" value={formDepEur} onChange={(e) => setFormDepEur(e.target.value)} />
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <div className="col-md-6">
@@ -267,33 +335,6 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                         <option value="Tarjeta">Tarjeta</option>
                       </select>
                     </div>
-                    <div className="col-12">
-                      <label className="form-label mb-2">Depósito</label>
-                      <div className="row g-2">
-                        <div className="col-md-4">
-                          <div className="input-group">
-                            <span className="input-group-text">$</span>
-                            <input name="deposito_pesos" type="number" step="0.01" min="0" className="form-control" placeholder="Pesos" defaultValue={editing?.deposito_pesos ?? ""} />
-                          </div>
-                        </div>
-                        <div className="col-md-4">
-                          <div className="input-group">
-                            <span className="input-group-text">USD</span>
-                            <input name="deposito_usd" type="number" step="0.01" min="0" className="form-control" placeholder="USD" defaultValue={editing?.deposito_usd ?? ""} />
-                          </div>
-                        </div>
-                        <div className="col-md-4">
-                          <div className="input-group">
-                            <span className="input-group-text">€</span>
-                            <input name="deposito_euros" type="number" step="0.01" min="0" className="form-control" placeholder="Euros" defaultValue={editing?.deposito_euros ?? ""} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Fecha de la cita</label>
-                      <input name="fecha_cita" type="datetime-local" className="form-control" defaultValue={editing ? toDateTimeLocal(editing.fecha_cita) : ""} required />
-                    </div>
                   </div>
                 </div>
                 <div className="modal-footer">
@@ -303,6 +344,89 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewing && (
+        <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Cita</h5>
+                <button type="button" className="btn-close" onClick={closeView} />
+              </div>
+              <div className="modal-body">
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small">Nombre</label>
+                    <div className="fw-semibold">{viewing.name}</div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small">Gerente</label>
+                    <div className="fw-semibold">{gerenteLabelById.get(viewing.gerente_id) ?? viewing.gerente_name}</div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small">Tatuador</label>
+                    <div className="fw-semibold">{tatuadorLabelById.get(viewing.tatuador_id) ?? viewing.tatuador_name}</div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small">Jalador</label>
+                    <div className="fw-semibold">{jaladorLabelById.get(viewing.jalador_id) ?? viewing.jalador_name}</div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small">Fecha de la cita</label>
+                    <div className="fw-semibold">{formatDateTime(viewing.fecha_cita)}</div>
+                  </div>
+                  <div className="col-12">
+                    <hr className="my-2" />
+                    <h6 className="fw-bold mb-2">Cotización</h6>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small">Cotización</label>
+                    <div className="fw-semibold">
+                      {Number(viewing.cotizacion).toFixed(2)}{" "}
+                      {viewing.moneda === "Pesos" ? "$" : viewing.moneda}
+                    </div>
+                    <div className="mt-1 fw-semibold fs-4">
+                      {(() => {
+                        const q = Number(viewing.cotizacion);
+                        const r = viewing.moneda === "USD" ? 16 : viewing.moneda === "Euros" ? 19 : 1;
+                        const qPesos = q * r;
+                        const p = Number(viewing.deposito_pesos || 0) + Number(viewing.deposito_usd || 0) * 16 + Number(viewing.deposito_euros || 0) * 19;
+                        const rem = Math.max(0, qPesos - p);
+                        return `Falta pagar: $${rem.toFixed(2)}`;
+                      })()}
+                    </div>
+                  </div>
+                  <div className="col-12">
+                    <hr className="my-2" />
+                    <h6 className="fw-bold mb-2">Depósito</h6>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small">Pesos</label>
+                    <div className="fw-semibold">${Number(viewing.deposito_pesos || 0).toFixed(2)}</div>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small">USD</label>
+                    <div className="fw-semibold">${Number(viewing.deposito_usd || 0).toFixed(2)}</div>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small">Euros</label>
+                    <div className="fw-semibold">${Number(viewing.deposito_euros || 0).toFixed(2)}</div>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted small">Forma de pago</label>
+                    <div className="fw-semibold">{viewing.forma_pago}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={closeView}>
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         </div>
