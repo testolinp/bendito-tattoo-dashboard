@@ -4,10 +4,13 @@ import { NextRequest, NextResponse } from "next/server";
 export async function middleware(request: NextRequest) {
   const { user, supabaseResponse } = await updateSession(request);
 
-  // Protect dashboard routes — only admin@benditotattoo.com can access
   if (request.nextUrl.pathname.startsWith("/dashboard")) {
-    if (!user || user.email !== "admin@benditotattoo.com") {
+    if (!user) {
       return NextResponse.redirect(new URL("/login", request.url));
+    }
+    const isAdmin = user.email === "admin@benditotattoo.com" || user.user_metadata?.is_admin === true;
+    if (!isAdmin && !request.nextUrl.pathname.startsWith("/dashboard/turnos") && !request.nextUrl.pathname.startsWith("/dashboard/citas")) {
+      return NextResponse.redirect(new URL("/dashboard/turnos", request.url));
     }
   }
 

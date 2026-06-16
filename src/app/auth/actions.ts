@@ -15,14 +15,17 @@ export async function login(
     password: formData.get("password") as string,
   };
 
-  const { error } = await supabase.auth.signInWithPassword(data);
+  const { data: authData, error } = await supabase.auth.signInWithPassword(data);
 
   if (error) {
     return { error: error.message };
   }
 
+  const userEmail = authData.user?.email ?? "";
+  const isAdmin = userEmail === "admin@benditotattoo.com" || authData.user?.user_metadata?.is_admin === true;
+
   revalidatePath("/dashboard");
-  redirect("/dashboard");
+  redirect(isAdmin ? "/dashboard" : "/dashboard/turnos");
 }
 
 export async function logout() {

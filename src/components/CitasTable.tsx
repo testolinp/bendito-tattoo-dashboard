@@ -11,6 +11,7 @@ import {
 import type { Appointment } from "@/lib/appointments-actions";
 import type { StaffMember } from "@/lib/staff-actions";
 import { naiveToISO, formatDateTime, toDateTimeLocal } from "@/lib/datetime-utils";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const PAGE_SIZE = 10;
 const waMsgUrl = (a: Appointment) => {
@@ -72,6 +73,8 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
   const [submitting, setSubmitting] = useState(false);
   const [pendingPage, setPendingPage] = useState(0);
   const [historyPage, setHistoryPage] = useState(0);
+  const [pendingCancelId, setPendingCancelId] = useState<number | null>(null);
+  const [pendingCompleteId, setPendingCompleteId] = useState<number | null>(null);
 
   const [formCotizacion, setFormCotizacion] = useState("");
   const [formMoneda, setFormMoneda] = useState("Pesos");
@@ -158,21 +161,13 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
   }
 
   const handleCancel = async (id: number) => {
-    if (!confirm("¿Cancelar esta cita?")) return;
-    const result = await cancelAppointment(id);
-    if (result?.error) alert(result.error);
+    setPendingCancelId(id);
   };
 
   const router = useRouter();
 
   const handleComplete = async (id: number) => {
-    if (!confirm("¿Concretar esta cita?")) return;
-    const result = await completeAppointment(id);
-    if (result?.error) {
-      alert(result.error);
-    } else {
-      router.push(`/dashboard/turnos?editTurnoId=${result.turnoId}`);
-    }
+    setPendingCompleteId(id);
   };
 
   // formatDateTime and toDateTimeLocal now imported from datetime-utils
@@ -277,6 +272,39 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
 
   return (
     <>
+      <ConfirmDialog
+        open={pendingCancelId !== null}
+        title="Cancelar cita"
+        message="¿Cancelar esta cita?"
+        confirmLabel="Cancelar"
+        onConfirm={async () => {
+          if (pendingCancelId === null) return;
+          const result = await cancelAppointment(pendingCancelId);
+          setPendingCancelId(null);
+          if (result?.error) alert(result.error);
+        }}
+        onCancel={() => setPendingCancelId(null)}
+      />
+
+      <ConfirmDialog
+        open={pendingCompleteId !== null}
+        title="Concretar cita"
+        message="¿Concretar esta cita?"
+        confirmLabel="Concretar"
+        variant="dark"
+        onConfirm={async () => {
+          if (pendingCompleteId === null) return;
+          const result = await completeAppointment(pendingCompleteId);
+          setPendingCompleteId(null);
+          if (result?.error) {
+            alert(result.error);
+          } else {
+            router.push(`/dashboard/turnos?editTurnoId=${result.turnoId}`);
+          }
+        }}
+        onCancel={() => setPendingCompleteId(null)}
+      />
+
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h2 className="h4 mb-0">Citas</h2>
         <button className="btn btn-dark" onClick={openCreate}>

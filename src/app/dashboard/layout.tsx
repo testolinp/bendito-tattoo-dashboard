@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/auth/actions";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard" },
@@ -21,6 +22,17 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      const user = data.user;
+      if (user?.email) setUserEmail(user.email);
+      setIsAdmin(user?.email === "admin@benditotattoo.com" || user?.user_metadata?.is_admin === true);
+    });
+  }, []);
 
   return (
     <div className="d-flex min-vh-100">
@@ -40,11 +52,11 @@ export default function DashboardLayout({
       >
         <div className="p-3 border-bottom border-secondary">
           <h5 className="mb-0">Bendito Tattoo</h5>
-          <small className="text-secondary">Dashboard</small>
+          <small className="text-secondary">{userEmail || "Dashboard"}</small>
         </div>
 
         <nav className="flex-grow-1 p-2">
-          {navItems.map((item) => {
+          {(isAdmin ? navItems : navItems.filter((item) => item.href === "/dashboard/turnos" || item.href === "/dashboard/citas")).map((item) => {
             const active = pathname === item.href;
             return (
               <Link
@@ -59,16 +71,20 @@ export default function DashboardLayout({
               </Link>
             );
           })}
-          <hr className="border-secondary my-2" />
-          <Link
-            href="/dashboard/users"
-            onClick={() => setSidebarOpen(false)}
-            className={`btn w-100 text-start mb-1 ${
-              pathname === "/dashboard/users" ? "btn-light text-dark" : "btn-dark text-white"
-            }`}
-          >
-            Usuarios
-          </Link>
+          {isAdmin && (
+            <>
+              <hr className="border-secondary my-2" />
+              <Link
+                href="/dashboard/users"
+                onClick={() => setSidebarOpen(false)}
+                className={`btn w-100 text-start mb-1 ${
+                  pathname === "/dashboard/users" ? "btn-light text-dark" : "btn-dark text-white"
+                }`}
+              >
+                Usuarios
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="p-3 border-top border-secondary">

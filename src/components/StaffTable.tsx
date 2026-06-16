@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createStaff, updateStaff, deleteStaff } from "@/lib/staff-actions";
 import type { StaffMember } from "@/lib/staff-actions";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type Props = {
   staff: StaffMember[];
@@ -13,6 +14,7 @@ type Props = {
 export default function StaffTable({ staff, role, title }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<StaffMember | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,9 +48,7 @@ export default function StaffTable({ staff, role, title }: Props) {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm("¿Eliminar este registro?")) return;
-    const result = await deleteStaff(id, role);
-    if (result?.error) alert(result.error);
+    setPendingDeleteId(id);
   };
 
   return (
@@ -116,6 +116,20 @@ export default function StaffTable({ staff, role, title }: Props) {
           </table>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Eliminar registro"
+        message="¿Eliminar este registro?"
+        confirmLabel="Eliminar"
+        onConfirm={async () => {
+          if (pendingDeleteId === null) return;
+          const result = await deleteStaff(pendingDeleteId, role);
+          setPendingDeleteId(null);
+          if (result?.error) alert(result.error);
+        }}
+        onCancel={() => setPendingDeleteId(null)}
+      />
 
       {modalOpen && (
         <div

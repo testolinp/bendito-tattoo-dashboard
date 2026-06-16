@@ -25,7 +25,7 @@ export default function LoginPage() {
                 name="email"
                 type="text"
                 className="form-control"
-                placeholder="benditotattooadmin"
+                placeholder="admin@benditotattoo.com"
                 required
                 autoFocus
               />

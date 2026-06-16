@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createUser, listUsers, updateUser, deleteUser, type AdminUser } from "@/lib/admin-actions";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -13,6 +14,7 @@ export default function UsersPage() {
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [editEmail, setEditEmail] = useState("");
   const [editIsAdmin, setEditIsAdmin] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; email: string } | null>(null);
 
   const loadUsers = async () => {
     try {
@@ -60,21 +62,34 @@ export default function UsersPage() {
     }
   };
 
-  const handleDelete = async (id: string, email: string) => {
-    if (!confirm(`¿Eliminar usuario "${email}"?`)) return;
-    setError("");
-    setSuccess("");
-    try {
-      await deleteUser(id, email);
-      setSuccess("Usuario eliminado exitosamente");
-      await loadUsers();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al eliminar usuario");
-    }
+  const handleDelete = (id: string, email: string) => {
+    setPendingDelete({ id, email });
   };
 
   return (
     <div>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Eliminar usuario"
+        message={pendingDelete ? `¿Eliminar usuario "${pendingDelete.email}"?` : ""}
+        confirmLabel="Eliminar"
+        onConfirm={async () => {
+          if (!pendingDelete) return;
+          setError("");
+          setSuccess("");
+          try {
+            await deleteUser(pendingDelete.id, pendingDelete.email);
+            setSuccess("Usuario eliminado exitosamente");
+            setPendingDelete(null);
+            await loadUsers();
+          } catch (err) {
+            setPendingDelete(null);
+            setError(err instanceof Error ? err.message : "Error al eliminar usuario");
+          }
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
+
       <h2 className="mb-4">Usuarios</h2>
 
       {error && <div className="alert alert-danger py-2">{error}</div>}
@@ -161,7 +176,8 @@ export default function UsersPage() {
                           <input
                             type="checkbox"
                             className="form-check-input"
-                            checked={editIsAdmin}
+                            checked={editing?.email === "admin@benditotattoo.com" ? true : editIsAdmin}
+                            disabled={editing?.email === "admin@benditotattoo.com"}
                             onChange={(e) => setEditIsAdmin(e.target.checked)}
                           />
                         </td>
