@@ -13,6 +13,22 @@ import type { StaffMember } from "@/lib/staff-actions";
 import { naiveToISO, formatDateTime, toDateTimeLocal } from "@/lib/datetime-utils";
 
 const PAGE_SIZE = 10;
+const waMsgUrl = (a: Appointment) => {
+  const rate = a.moneda === "USD" ? 16 : a.moneda === "Euros" ? 19 : 1;
+  const totalPesos = a.cotizacion * rate;
+  const paid = a.deposito_pesos + a.deposito_usd * 16 + a.deposito_euros * 19;
+  const remaining = Math.max(0, totalPesos - paid);
+  const date = new Date(a.fecha_cita);
+  const dateStr = date.toLocaleDateString("es-MX", { timeZone: "America/Cancun", day: "2-digit", month: "2-digit", year: "numeric" });
+  const timeStr = date.toLocaleTimeString("es-MX", { timeZone: "America/Cancun", hour: "2-digit", minute: "2-digit", hour12: false });
+  const dateEn = date.toLocaleDateString("en-US", { timeZone: "America/Cancun", day: "2-digit", month: "2-digit", year: "numeric" });
+  const timeEn = date.toLocaleTimeString("en-US", { timeZone: "America/Cancun", hour: "2-digit", minute: "2-digit", hour12: false });
+  const sym = a.moneda === "Pesos" ? "$" : a.moneda === "USD" ? "USD $" : "\u20AC";
+  const pagoEs = remaining <= 0 ? "YA EST\u00C1 TOTALMENTE PAGO" : `LE QUEDA PAGAR $${remaining.toFixed(2)}`;
+  const pagoEn = remaining <= 0 ? "IT IS FULLY PAID" : `YOU HAVE $${remaining.toFixed(2)} LEFT TO PAY`;
+  const msg = `\u00A1Hola! Te confirmamos tu turno en Bendito Tattoo.\n\n\u2022 Fecha y Hora: ${dateStr} a las ${timeStr} hs.\n\u2022 Costo total: ${sym}${a.cotizacion.toFixed(2)}\n\u2022 Estado del pago: ${pagoEs}\n\u2022 Direcci\u00F3n: https://maps.app.goo.gl/vW3qK7jbywo6gUBu5\n\n\u00A1Te esperamos! Record\u00E1 venir con ropa c\u00F3moda y bien alimentado.\n\n---\n\nHello! We confirm your appointment at Bendito Tattoo.\n\n\u2022 Date and Time: ${dateEn} at ${timeEn}\n\u2022 Total Cost: ${sym}${a.cotizacion.toFixed(2)}\n\u2022 Payment Status: ${pagoEn}\n\u2022 Address: https://maps.app.goo.gl/vW3qK7jbywo6gUBu5\n\nWe look forward to seeing you! Remember to come in comfortable clothes and well-fed.`;
+  return `https://wa.me/${a.telefono.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(msg)}`;
+};
 
 type Props = {
   appointments: Appointment[];
@@ -182,13 +198,13 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                 <th>Cotización</th>
                 <th>Fecha de cita</th>
                 <th>Estado</th>
-                {showActions && <th style={{ width: 220 }}>Acciones</th>}
+                <th style={{ width: 220 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {slice.length === 0 && (
                 <tr>
-                  <td colSpan={showActions ? 8 : 7} className="text-center text-muted py-4">
+                  <td colSpan={8} className="text-center text-muted py-4">
                     No hay citas {title.toLowerCase()}
                   </td>
                 </tr>
@@ -207,13 +223,21 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                     </span>
                   </td>
                   {showActions && (
-                    <td>
+                    <td style={{ whiteSpace: "nowrap" }}>
                       <button className="btn btn-sm btn-outline-info me-1" onClick={() => openView(a)}>
                         Ver
                       </button>
                       <button className="btn btn-sm btn-outline-secondary me-1" onClick={() => openEdit(a)}>
                         Editar
                       </button>
+                      <a
+                        href={a.telefono ? waMsgUrl(a) : "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`btn btn-sm me-1 ${a.telefono ? "btn-outline-success" : "btn-outline-secondary disabled"}`}
+                      >
+                        Mensaje
+                      </a>
                       {a.status === "pendiente" && (
                         <>
                           <button className="btn btn-sm btn-outline-success me-1" onClick={() => handleComplete(a.id)}>
@@ -224,6 +248,21 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                           </button>
                         </>
                       )}
+                    </td>
+                  )}
+                  {!showActions && (
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <button className="btn btn-sm btn-outline-info me-1" onClick={() => openView(a)}>
+                        Ver
+                      </button>
+                      <a
+                        href={a.telefono ? waMsgUrl(a) : "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`btn btn-sm me-1 ${a.telefono ? "btn-outline-success" : "btn-outline-secondary disabled"}`}
+                      >
+                        Mensaje
+                      </a>
                     </td>
                   )}
                 </tr>
@@ -264,7 +303,7 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                     <div className="col-md-6">
                       <label className="form-label">Teléfono</label>
                       <div className="input-group">
-                        <select name="codigo_pais" className="form-select" style={{ maxWidth: 110 }} defaultValue={editing ? (editing.telefono?.split(" ")[0] ?? "+52") : "+52"}>
+                        <select name="codigo_pais" className="form-select" style={{ maxWidth: 110 }} defaultValue={editing?.telefono ? (editing.telefono.split(" ")[0] ?? "+52") : "+52"}>
                           <option value="+52">🇲🇽 +52</option>
                           <option value="+1">🇺🇸 +1</option>
                           <option value="+34">🇪🇸 +34</option>
@@ -274,7 +313,7 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                           <option value="+51">🇵🇪 +51</option>
                           <option value="+598">🇺🇾 +598</option>
                         </select>
-                        <input name="telefono" type="tel" className="form-control" placeholder="5551234567" defaultValue={editing ? (editing.telefono?.split(" ").slice(1).join(" ") ?? "") : ""} />
+                        <input name="telefono" type="tel" className="form-control" placeholder="5551234567" defaultValue={editing?.telefono ? editing.telefono.split(" ").slice(1).join(" ") : ""} />
                       </div>
                     </div>
                     <div className="col-md-6">

@@ -15,6 +15,24 @@ type Props = {
   editTurnoId?: number | null;
 };
 const PAGE_SIZE = 10;
+const waMsgUrl = (t: Turno) => {
+  const rate = t.moneda === "USD" ? 16 : t.moneda === "Euros" ? 19 : 1;
+  const totalPesos = t.cotizacion * rate;
+  const paid = (t.deposito_pesos + t.pago_pesos)
+    + (t.deposito_usd + t.pago_usd) * 16
+    + (t.deposito_euros + t.pago_euros) * 19;
+  const remaining = Math.max(0, totalPesos - paid);
+  const date = new Date(t.fecha_cita);
+  const dateStr = date.toLocaleDateString("es-MX", { timeZone: "America/Cancun", day: "2-digit", month: "2-digit", year: "numeric" });
+  const timeStr = date.toLocaleTimeString("es-MX", { timeZone: "America/Cancun", hour: "2-digit", minute: "2-digit", hour12: false });
+  const dateEn = date.toLocaleDateString("en-US", { timeZone: "America/Cancun", day: "2-digit", month: "2-digit", year: "numeric" });
+  const timeEn = date.toLocaleTimeString("en-US", { timeZone: "America/Cancun", hour: "2-digit", minute: "2-digit", hour12: false });
+  const sym = t.moneda === "Pesos" ? "$" : t.moneda === "USD" ? "USD $" : "\u20AC";
+  const pagoEs = remaining <= 0 ? "YA EST\u00C1 TOTALMENTE PAGO" : `LE QUEDA PAGAR $${remaining.toFixed(2)}`;
+  const pagoEn = remaining <= 0 ? "IT IS FULLY PAID" : `YOU HAVE $${remaining.toFixed(2)} LEFT TO PAY`;
+  const msg = `\u00A1Hola! Te confirmamos tu turno en Bendito Tattoo.\n\n\u2022 Fecha y Hora: ${dateStr} a las ${timeStr} hs.\n\u2022 Costo total: ${sym}${t.cotizacion.toFixed(2)}\n\u2022 Estado del pago: ${pagoEs}\n\u2022 Direcci\u00F3n: https://maps.app.goo.gl/vW3qK7jbywo6gUBu5\n\n\u00A1Te esperamos! Record\u00E1 venir con ropa c\u00F3moda y bien alimentado.\n\n---\n\nHello! We confirm your appointment at Bendito Tattoo.\n\n\u2022 Date and Time: ${dateEn} at ${timeEn}\n\u2022 Total Cost: ${sym}${t.cotizacion.toFixed(2)}\n\u2022 Payment Status: ${pagoEn}\n\u2022 Address: https://maps.app.goo.gl/vW3qK7jbywo6gUBu5\n\nWe look forward to seeing you! Remember to come in comfortable clothes and well-fed.`;
+  return `https://wa.me/${t.telefono.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(msg)}`;
+};
 
 function Pagination({
   page,
@@ -258,7 +276,7 @@ export default function TurnosTable({
                     <div className="col-md-6">
                       <label className="form-label">Teléfono</label>
                       <div className="input-group">
-                        <select name="codigo_pais" className="form-select" style={{ maxWidth: 110 }} defaultValue={editing ? (editing.telefono?.split(" ")[0] ?? "+52") : "+52"}>
+                        <select name="codigo_pais" className="form-select" style={{ maxWidth: 110 }} defaultValue={editing?.telefono ? (editing.telefono.split(" ")[0] ?? "+52") : "+52"}>
                           <option value="+52">🇲🇽 +52</option>
                           <option value="+1">🇺🇸 +1</option>
                           <option value="+34">🇪🇸 +34</option>
@@ -268,7 +286,7 @@ export default function TurnosTable({
                           <option value="+51">🇵🇪 +51</option>
                           <option value="+598">🇺🇾 +598</option>
                         </select>
-                        <input name="telefono" type="tel" className="form-control" placeholder="5551234567" defaultValue={editing ? (editing.telefono?.split(" ").slice(1).join(" ") ?? "") : ""} />
+                        <input name="telefono" type="tel" className="form-control" placeholder="5551234567" defaultValue={editing?.telefono ? editing.telefono.split(" ").slice(1).join(" ") : ""} />
                       </div>
                     </div>
                     <div className="col-md-6">
@@ -815,7 +833,7 @@ export default function TurnosTable({
                     {t.moneda === "Pesos" ? "$" : t.moneda}
                   </td>
                   <td>{formatDateTime(t.fecha_cita)}</td>
-                  <td>
+                  <td style={{ whiteSpace: "nowrap" }}>
                     <button
                       className="btn btn-sm btn-outline-info me-1"
                       onClick={() => openView(t)}
@@ -823,11 +841,19 @@ export default function TurnosTable({
                       Ver
                     </button>
                     <button
-                      className="btn btn-sm btn-outline-secondary"
+                      className="btn btn-sm btn-outline-secondary me-1"
                       onClick={() => openEdit(t)}
                     >
                       Editar
                     </button>
+                    <a
+                      href={t.telefono ? waMsgUrl(t) : "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`btn btn-sm me-1 ${t.telefono ? "btn-outline-success" : "btn-outline-secondary disabled"}`}
+                    >
+                      Mensaje
+                    </a>
                   </td>
                 </tr>
               ))}
@@ -879,7 +905,7 @@ export default function TurnosTable({
                     {t.moneda === "Pesos" ? "$" : t.moneda}
                   </td>
                   <td>{formatDateTime(t.fecha_cita)}</td>
-                  <td>
+                  <td style={{ whiteSpace: "nowrap" }}>
                     <button
                       className="btn btn-sm btn-outline-info me-1"
                       onClick={() => openView(t)}
@@ -887,11 +913,19 @@ export default function TurnosTable({
                       Ver
                     </button>
                     <button
-                      className="btn btn-sm btn-outline-secondary"
+                      className="btn btn-sm btn-outline-secondary me-1"
                       onClick={() => openEdit(t)}
                     >
                       Editar
                     </button>
+                    <a
+                      href={t.telefono ? waMsgUrl(t) : "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`btn btn-sm me-1 ${t.telefono ? "btn-outline-success" : "btn-outline-secondary disabled"}`}
+                    >
+                      Mensaje
+                    </a>
                   </td>
                 </tr>
               ))}
