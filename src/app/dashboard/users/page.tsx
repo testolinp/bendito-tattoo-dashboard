@@ -99,7 +99,7 @@ export default function UsersPage() {
       <div className="card mb-4">
         <div className="card-body">
           <h5 className="card-title">Crear usuario</h5>
-          <form onSubmit={handleCreate}>
+          <form onSubmit={handleCreate} suppressHydrationWarning>
             <div className="row g-3 align-items-end">
               <div className="col-md-4">
                 <label className="form-label">Email / Usuario</label>
