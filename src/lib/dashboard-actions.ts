@@ -30,6 +30,9 @@ export type IncomeStats = {
   totalDepPesos: number;
   totalDepUsd: number;
   totalDepEuros: number;
+  totalPagPesos: number;
+  totalPagUsd: number;
+  totalPagEuros: number;
   dailyBreakdown: {
     date: string;
     count: number;
@@ -66,6 +69,9 @@ export async function getIncomeStats(start: string, end: string) {
   let totalDepPesos = 0;
   let totalDepUsd = 0;
   let totalDepEuros = 0;
+  let totalPagPesos = 0;
+  let totalPagUsd = 0;
+  let totalPagEuros = 0;
 
   const dayMap = new Map<
     string,
@@ -87,12 +93,12 @@ export async function getIncomeStats(start: string, end: string) {
     if (t.moneda === "Pesos") totalPesos += cot;
     else if (t.moneda === "USD") totalUsd += cot;
     else if (t.moneda === "Euros") totalEuros += cot;
-    totalPesos += dp + pp;
-    totalUsd += du + pu;
-    totalEuros += de + pe;
     totalDepPesos += dp;
     totalDepUsd += du;
     totalDepEuros += de;
+    totalPagPesos += pp;
+    totalPagUsd += pu;
+    totalPagEuros += pe;
 
     const day = t.fecha_cita.split("T")[0];
     const entry = dayMap.get(day) || {
@@ -147,6 +153,9 @@ export async function getIncomeStats(start: string, end: string) {
     totalDepPesos,
     totalDepUsd,
     totalDepEuros,
+    totalPagPesos,
+    totalPagUsd,
+    totalPagEuros,
     dailyBreakdown,
     turnos,
   };

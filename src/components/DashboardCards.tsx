@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { getIncomeStats, type IncomeStats, type TurnoRow } from "@/lib/dashboard-actions";
+import {
+  getIncomeStats,
+  type IncomeStats,
+  type TurnoRow,
+} from "@/lib/dashboard-actions";
 import { formatDateTime } from "@/lib/datetime-utils";
 
 type Period = "day" | "week" | "month";
@@ -50,7 +54,10 @@ function getDateRange(period: Period, offset: number) {
     const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
     const start = new Date(d);
     const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-    const label = d.toLocaleDateString("es-MX", { month: "long", year: "numeric" });
+    const label = d.toLocaleDateString("es-MX", {
+      month: "long",
+      year: "numeric",
+    });
     return { start, end, label };
   }
 
@@ -60,7 +67,10 @@ function getDateRange(period: Period, offset: number) {
 const fmt = (n: number) =>
   n === 0
     ? "—"
-    : n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    : n.toLocaleString("es-MX", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
 
 // formatDateTime now imported from datetime-utils
 
@@ -91,22 +101,40 @@ export default function DashboardCards() {
     <>
       <div className="d-flex flex-wrap align-items-center gap-2 mb-4">
         <div className="btn-group" role="group">
-          {(Object.entries(periodLabels) as [Period, string][]).map(([key, text]) => (
-            <button
-              key={key}
-              className={`btn btn-sm ${period === key ? "btn-dark" : "btn-outline-dark"}`}
-              onClick={() => { setPeriod(key); setOffset(0); }}
-            >
-              {text}
-            </button>
-          ))}
+          {(Object.entries(periodLabels) as [Period, string][]).map(
+            ([key, text]) => (
+              <button
+                key={key}
+                className={`btn btn-sm ${period === key ? "btn-dark" : "btn-outline-dark"}`}
+                onClick={() => {
+                  setPeriod(key);
+                  setOffset(0);
+                }}
+              >
+                {text}
+              </button>
+            ),
+          )}
         </div>
         <div className="d-flex align-items-center gap-2 ms-2">
-          <button className="btn btn-sm btn-outline-secondary" onClick={() => setOffset((o) => o - 1)}>◀</button>
-          <span className="fw-semibold text-capitalize" style={{ minWidth: 160, textAlign: "center" }}>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => setOffset((o) => o - 1)}
+          >
+            ◀
+          </button>
+          <span
+            className="fw-semibold text-capitalize"
+            style={{ minWidth: 160, textAlign: "center" }}
+          >
             {label}
           </span>
-          <button className="btn btn-sm btn-outline-secondary" onClick={() => setOffset((o) => o + 1)}>▶</button>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => setOffset((o) => o + 1)}
+          >
+            ▶
+          </button>
         </div>
       </div>
 
@@ -125,7 +153,9 @@ export default function DashboardCards() {
               <div className="card text-bg-info">
                 <div className="card-body">
                   <h6 className="card-title mb-0">Cotización</h6>
-                  <p className="card-text h4 mb-0">${fmt(stats.totalCotizacion)}</p>
+                  <p className="card-text h4 mb-0">
+                    ${fmt(stats.totalCotizacion)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -133,7 +163,9 @@ export default function DashboardCards() {
               <div className="card text-bg-primary">
                 <div className="card-body">
                   <h6 className="card-title mb-0">Pesos</h6>
-                  <p className="card-text h4 mb-0">${fmt(stats.totalPesos)}</p>
+                  <p className="card-text h4 mb-0">
+                    ${fmt(stats.totalDepPesos + stats.totalPagPesos)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -141,7 +173,9 @@ export default function DashboardCards() {
               <div className="card text-bg-success">
                 <div className="card-body">
                   <h6 className="card-title mb-0">USD</h6>
-                  <p className="card-text h4 mb-0">${fmt(stats.totalUsd)}</p>
+                  <p className="card-text h4 mb-0">
+                    ${fmt(stats.totalDepUsd + stats.totalPagUsd)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -149,7 +183,9 @@ export default function DashboardCards() {
               <div className="card text-bg-warning">
                 <div className="card-body">
                   <h6 className="card-title mb-0">Euros</h6>
-                  <p className="card-text h4 mb-0">€{fmt(stats.totalEuros)}</p>
+                  <p className="card-text h4 mb-0">
+                    €{fmt(stats.totalDepEuros + stats.totalPagEuros)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -160,86 +196,136 @@ export default function DashboardCards() {
               <div className="card-header">Turnos</div>
               <div className="table-responsive">
                 <table className="table table-sm mb-0">
-                    <thead className="table-light">
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Cliente</th>
-                        <th>Gerente</th>
-                        <th>Tatuador</th>
-                        <th>Jalador</th>
-                        <th>Cotización</th>
-                        <th>Acción</th>
+                  <thead className="table-light">
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Cliente</th>
+                      <th>Gerente</th>
+                      <th>Tatuador</th>
+                      <th>Jalador</th>
+                      <th>Cotización</th>
+                      <th>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.turnos.map((t) => (
+                      <tr key={t.id}>
+                        <td>{formatDateTime(t.fecha_cita)}</td>
+                        <td>{t.name}</td>
+                        <td>{t.gerente_name}</td>
+                        <td>{t.tatuador_name}</td>
+                        <td>{t.jalador_name}</td>
+                        <td>
+                          ${fmt(t.cotizacion)}{" "}
+                          {t.moneda === "Pesos" ? "$" : t.moneda}
+                        </td>
+                        <td>
+                          <button
+                            className="btn btn-sm btn-outline-dark"
+                            onClick={() => setViewing(t)}
+                          >
+                            Ver
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {stats.turnos.map((t) => (
-                        <tr key={t.id}>
-                          <td>{formatDateTime(t.fecha_cita)}</td>
-                          <td>{t.name}</td>
-                          <td>{t.gerente_name}</td>
-                          <td>{t.tatuador_name}</td>
-                          <td>{t.jalador_name}</td>
-                          <td>
-                            ${fmt(t.cotizacion)} {t.moneda === "Pesos" ? "$" : t.moneda}
-                          </td>
-                          <td>
-                            <button className="btn btn-sm btn-outline-dark" onClick={() => setViewing(t)}>Ver</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
+                    ))}
+                  </tbody>
                 </table>
               </div>
             </div>
           )}
 
           {viewing && (
-            <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }} ref={viewModalRef} onKeyDown={(e) => { if (e.key === "Escape") setViewing(null); }}>
+            <div
+              className="modal d-block"
+              tabIndex={-1}
+              style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+              ref={viewModalRef}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setViewing(null);
+              }}
+            >
               <div className="modal-dialog modal-dialog-centered modal-lg">
                 <div className="modal-content">
                   <div className="modal-header">
                     <h5 className="modal-title">Detalles del turno</h5>
-                    <button type="button" className="btn-close" onClick={() => setViewing(null)} />
+                    <button
+                      type="button"
+                      className="btn-close"
+                      onClick={() => setViewing(null)}
+                    />
                   </div>
                   <div className="modal-body">
                     <div className="row g-3">
                       <div className="col-md-6">
-                        <label className="form-label text-muted small">Nombre</label>
+                        <label className="form-label text-muted small">
+                          Nombre
+                        </label>
                         <div className="fw-semibold">{viewing.name}</div>
                       </div>
                       <div className="col-md-6">
-                        <label className="form-label text-muted small">Fecha</label>
-                        <div className="fw-semibold">{formatDateTime(viewing.fecha_cita)}</div>
+                        <label className="form-label text-muted small">
+                          Fecha
+                        </label>
+                        <div className="fw-semibold">
+                          {formatDateTime(viewing.fecha_cita)}
+                        </div>
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label text-muted small">Gerente</label>
-                        <div className="fw-semibold">{viewing.gerente_name}</div>
+                        <label className="form-label text-muted small">
+                          Gerente
+                        </label>
+                        <div className="fw-semibold">
+                          {viewing.gerente_name}
+                        </div>
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label text-muted small">Tatuador</label>
-                        <div className="fw-semibold">{viewing.tatuador_name}</div>
+                        <label className="form-label text-muted small">
+                          Tatuador
+                        </label>
+                        <div className="fw-semibold">
+                          {viewing.tatuador_name}
+                        </div>
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label text-muted small">Jalador</label>
-                        <div className="fw-semibold">{viewing.jalador_name}</div>
+                        <label className="form-label text-muted small">
+                          Jalador
+                        </label>
+                        <div className="fw-semibold">
+                          {viewing.jalador_name}
+                        </div>
                       </div>
                       <div className="col-12">
                         <hr className="my-2" />
                         <h6 className="fw-bold mb-2">Cotización</h6>
                       </div>
                       <div className="col-md-6">
-                        <label className="form-label text-muted small">Cotización</label>
+                        <label className="form-label text-muted small">
+                          Cotización
+                        </label>
                         <div className="fw-semibold">
-                          ${fmt(viewing.cotizacion)} {viewing.moneda === "Pesos" ? "$" : viewing.moneda}
+                          ${fmt(viewing.cotizacion)}{" "}
+                          {viewing.moneda === "Pesos" ? "$" : viewing.moneda}
                         </div>
                       </div>
                       <div className="col-md-6 d-flex align-items-end pb-1">
                         <div className="fw-semibold fs-4">
                           {(() => {
                             const q = Number(viewing.cotizacion);
-                            const r = viewing.moneda === "USD" ? 16 : viewing.moneda === "Euros" ? 19 : 1;
+                            const r =
+                              viewing.moneda === "USD"
+                                ? 16
+                                : viewing.moneda === "Euros"
+                                  ? 19
+                                  : 1;
                             const qPesos = q * r;
-                            const p = Number(viewing.deposito_pesos || 0) + Number(viewing.deposito_usd || 0) * 16 + Number(viewing.deposito_euros || 0) * 19 + Number(viewing.pago_pesos || 0) + Number(viewing.pago_usd || 0) * 16 + Number(viewing.pago_euros || 0) * 19;
+                            const p =
+                              Number(viewing.deposito_pesos || 0) +
+                              Number(viewing.deposito_usd || 0) * 16 +
+                              Number(viewing.deposito_euros || 0) * 19 +
+                              Number(viewing.pago_pesos || 0) +
+                              Number(viewing.pago_usd || 0) * 16 +
+                              Number(viewing.pago_euros || 0) * 19;
                             const rem = Math.max(0, qPesos - p);
                             return `Falta pagar: $${rem.toFixed(2)}`;
                           })()}
@@ -255,25 +341,41 @@ export default function DashboardCards() {
                           </div>
                           {Number(viewing.deposito_pesos || 0) > 0 && (
                             <div className="col-md-3">
-                              <label className="form-label text-muted small">Pesos</label>
-                              <div className="fw-semibold">${fmt(viewing.deposito_pesos)}</div>
+                              <label className="form-label text-muted small">
+                                Pesos
+                              </label>
+                              <div className="fw-semibold">
+                                ${fmt(viewing.deposito_pesos)}
+                              </div>
                             </div>
                           )}
                           {Number(viewing.deposito_usd || 0) > 0 && (
                             <div className="col-md-3">
-                              <label className="form-label text-muted small">USD</label>
-                              <div className="fw-semibold">${fmt(viewing.deposito_usd)}</div>
+                              <label className="form-label text-muted small">
+                                USD
+                              </label>
+                              <div className="fw-semibold">
+                                ${fmt(viewing.deposito_usd)}
+                              </div>
                             </div>
                           )}
                           {Number(viewing.deposito_euros || 0) > 0 && (
                             <div className="col-md-3">
-                              <label className="form-label text-muted small">Euros</label>
-                              <div className="fw-semibold">€{fmt(viewing.deposito_euros)}</div>
+                              <label className="form-label text-muted small">
+                                Euros
+                              </label>
+                              <div className="fw-semibold">
+                                €{fmt(viewing.deposito_euros)}
+                              </div>
                             </div>
                           )}
                           <div className="col-md-3">
-                            <label className="form-label text-muted small">Forma de pago</label>
-                            <div className="fw-semibold">{viewing.forma_pago}</div>
+                            <label className="form-label text-muted small">
+                              Forma de pago
+                            </label>
+                            <div className="fw-semibold">
+                              {viewing.forma_pago}
+                            </div>
                           </div>
                         </>
                       )}
@@ -283,30 +385,52 @@ export default function DashboardCards() {
                       </div>
                       {Number(viewing.pago_pesos || 0) > 0 && (
                         <div className="col-md-3">
-                          <label className="form-label text-muted small">Pesos</label>
-                          <div className="fw-semibold">${fmt(viewing.pago_pesos)}</div>
+                          <label className="form-label text-muted small">
+                            Pesos
+                          </label>
+                          <div className="fw-semibold">
+                            ${fmt(viewing.pago_pesos)}
+                          </div>
                         </div>
                       )}
                       {Number(viewing.pago_usd || 0) > 0 && (
                         <div className="col-md-3">
-                          <label className="form-label text-muted small">USD</label>
-                          <div className="fw-semibold">${fmt(viewing.pago_usd)}</div>
+                          <label className="form-label text-muted small">
+                            USD
+                          </label>
+                          <div className="fw-semibold">
+                            ${fmt(viewing.pago_usd)}
+                          </div>
                         </div>
                       )}
                       {Number(viewing.pago_euros || 0) > 0 && (
                         <div className="col-md-3">
-                          <label className="form-label text-muted small">Euros</label>
-                          <div className="fw-semibold">€{fmt(viewing.pago_euros)}</div>
+                          <label className="form-label text-muted small">
+                            Euros
+                          </label>
+                          <div className="fw-semibold">
+                            €{fmt(viewing.pago_euros)}
+                          </div>
                         </div>
                       )}
                       <div className="col-md-3">
-                        <label className="form-label text-muted small">Forma de pago</label>
-                        <div className="fw-semibold">{viewing.pago_forma_pago}</div>
+                        <label className="form-label text-muted small">
+                          Forma de pago
+                        </label>
+                        <div className="fw-semibold">
+                          {viewing.pago_forma_pago}
+                        </div>
                       </div>
                     </div>
                   </div>
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={() => setViewing(null)}>Cerrar</button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setViewing(null)}
+                    >
+                      Cerrar
+                    </button>
                   </div>
                 </div>
               </div>
