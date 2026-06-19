@@ -78,12 +78,15 @@ function PersonRow({
               Pagado ({paymentMethod})
             </span>
           ) : (
-            <button className="btn btn-sm btn-dark" onClick={onConfirm}>
-              Confirmar pago
-            </button>
+            <>
+              <button className="btn btn-sm btn-dark d-print-none" onClick={onConfirm}>
+                Confirmar pago
+              </button>
+              <span className="text-muted small d-none d-print-inline">Pendiente</span>
+            </>
           )}
         </td>
-        <td className="text-end" style={{ minWidth: 80 }}>
+        <td className="text-end d-print-none" style={{ minWidth: 80 }}>
           {paymentMethod ? (
             <button
               className="btn btn-sm btn-outline-success me-1"
@@ -94,21 +97,20 @@ function PersonRow({
             </button>
           ) : null}
           <button
-            className="btn btn-sm btn-outline-secondary"
+            className="btn btn-sm btn-outline-secondary d-print-none"
             onClick={() => setExpanded(!expanded)}
           >
             {expanded ? "▴" : "▾"}
           </button>
         </td>
       </tr>
-      {expanded &&
-        person.roles.map((r, i) => (
-          <tr key={i} className="table-light">
-            <td className="ps-4 text-muted">{r.role}</td>
-            <td className="text-muted">${fmt(r.amount)}</td>
-            <td colSpan={2} />
-          </tr>
-        ))}
+      {person.roles.map((r, i) => (
+        <tr key={i} className={`table-light ${expanded ? "" : "d-none"} d-print-table-row`}>
+          <td className="ps-4 text-muted">{r.role}</td>
+          <td className="text-muted">${fmt(r.amount)}</td>
+          <td colSpan={2} />
+        </tr>
+      ))}
     </>
   );
 }
@@ -249,6 +251,11 @@ function PagosContent() {
         </div>
       )}
 
+      <style>{`
+        @media print {
+          .table .d-print-table-row { display: table-row !important; }
+        }
+      `}</style>
       <h2 className="mb-4">Pagos</h2>
 
       <div className="d-flex flex-wrap align-items-center gap-2 mb-4">
@@ -288,6 +295,11 @@ function PagosContent() {
             ▶
           </button>
         </div>
+        <div className="d-flex gap-2 ms-auto">
+          <button className="btn btn-sm btn-outline-secondary" onClick={() => window.print()}>
+            Imprimir
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -309,7 +321,7 @@ function PagosContent() {
                   <th>Nombre</th>
                   <th>Total a pagar</th>
                   <th>Estado</th>
-                  <th className="text-end">Acción</th>
+                  <th className="text-end d-print-none">Acción</th>
                 </tr>
               </thead>
               <tbody>

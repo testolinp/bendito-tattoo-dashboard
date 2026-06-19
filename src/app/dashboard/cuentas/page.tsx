@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   getCuentasSummary,
   type CuentasSummary,
@@ -59,10 +60,32 @@ function BreakdownRow({ label, data }: { label: string; data: CurrencyBreakdown 
 }
 
 export default function CuentasPage() {
-  const [period, setPeriod] = useState<Period>("week");
-  const [offset, setOffset] = useState(0);
+  return (
+    <Suspense fallback={<div className="p-4 text-muted">Cargando...</div>}>
+      <CuentasContent />
+    </Suspense>
+  );
+}
+
+function CuentasContent() {
+  const searchParams = useSearchParams();
+  const periodParam = searchParams.get("period");
+  const offsetParam = searchParams.get("offset");
+  const initialPeriod: Period =
+    periodParam === "week" || periodParam === "month" ? periodParam : "week";
+  const initialOffset = offsetParam ? parseInt(offsetParam, 10) : 0;
+
+  const [period, setPeriod] = useState<Period>(initialPeriod);
+  const [offset, setOffset] = useState(initialOffset);
   const [summary, setSummary] = useState<CuentasSummary | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("period", period);
+    params.set("offset", String(offset));
+    window.history.replaceState(null, "", `?${params.toString()}`);
+  }, [period, offset]);
 
   const fetchSummary = useCallback(async () => {
     setLoading(true);
@@ -120,6 +143,11 @@ export default function CuentasPage() {
             onClick={() => setOffset((o) => o + 1)}
           >
             ▶
+          </button>
+        </div>
+        <div className="d-flex gap-2 ms-auto">
+          <button className="btn btn-sm btn-outline-secondary" onClick={() => window.print()}>
+            Imprimir
           </button>
         </div>
       </div>
