@@ -137,7 +137,9 @@ function PagosContent() {
   const modalRef = useRef<HTMLDivElement>(null);
 
   const { start, end, label } = getDateRange(period, offset);
-  const periodStart = start.toISOString();
+  const startISO = start.toISOString();
+  const endISO = end.toISOString();
+  const periodStart = startISO;
 
   useEffect(() => {
     if (confirmingPerson) modalRef.current?.focus();
@@ -145,12 +147,12 @@ function PagosContent() {
 
   const fetchData = useCallback(async () => {
     const [summaryData, confirmedPayments] = await Promise.all([
-      getPaymentSummary(start.toISOString(), end.toISOString()),
+      getPaymentSummary(startISO, endISO),
       getConfirmedPayments(periodStart),
     ]);
     setSummary(summaryData);
     setConfirmedMap(new Map(confirmedPayments.map((c) => [c.person_name, c.payment_method])));
-  }, [start, end, periodStart]);
+  }, [startISO, endISO, periodStart]);
 
   useEffect(() => {
     fetchData();

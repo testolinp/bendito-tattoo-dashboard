@@ -15,6 +15,8 @@ type Props = {
   editTurnoId?: number | null;
 };
 const PAGE_SIZE = 10;
+const hasPhone = (t: Turno) => t.telefono.replace(/[^0-9]/g, "").length >= 10;
+
 const waMsgUrl = (t: Turno) => {
   const rate = t.moneda === "USD" ? 16 : t.moneda === "Euros" ? 19 : 1;
   const totalPesos = t.cotizacion * rate;
@@ -844,14 +846,20 @@ export default function TurnosTable({
                     >
                       Editar
                     </button>
-                    <a
-                      href={t.telefono ? waMsgUrl(t) : "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`btn btn-sm me-1 ${t.telefono ? "btn-outline-success" : "btn-outline-secondary disabled"}`}
-                    >
-                      Mensaje
-                    </a>
+                    {hasPhone(t) ? (
+                      <a
+                        href={waMsgUrl(t)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-sm btn-outline-success me-1"
+                      >
+                        Mensaje
+                      </a>
+                    ) : (
+                      <span className="btn btn-sm btn-outline-secondary disabled me-1">
+                        Mensaje
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -916,14 +924,20 @@ export default function TurnosTable({
                     >
                       Editar
                     </button>
-                    <a
-                      href={t.telefono ? waMsgUrl(t) : "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`btn btn-sm me-1 ${t.telefono ? "btn-outline-success" : "btn-outline-secondary disabled"}`}
-                    >
-                      Mensaje
-                    </a>
+                    {hasPhone(t) ? (
+                      <a
+                        href={waMsgUrl(t)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-sm btn-outline-success me-1"
+                      >
+                        Mensaje
+                      </a>
+                    ) : (
+                      <span className="btn btn-sm btn-outline-secondary disabled me-1">
+                        Mensaje
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

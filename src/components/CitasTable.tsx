@@ -14,6 +14,8 @@ import { naiveToISO, formatDateTime, toDateTimeLocal } from "@/lib/datetime-util
 import ConfirmDialog from "@/components/ConfirmDialog";
 
 const PAGE_SIZE = 10;
+const hasPhone = (a: Appointment) => a.telefono.replace(/[^0-9]/g, "").length >= 10;
+
 const waMsgUrl = (a: Appointment) => {
   const rate = a.moneda === "USD" ? 16 : a.moneda === "Euros" ? 19 : 1;
   const totalPesos = a.cotizacion * rate;
@@ -225,14 +227,20 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                       <button className="btn btn-sm btn-outline-secondary me-1" onClick={() => openEdit(a)}>
                         Editar
                       </button>
-                      <a
-                        href={a.telefono ? waMsgUrl(a) : "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`btn btn-sm me-1 ${a.telefono ? "btn-outline-success" : "btn-outline-secondary disabled"}`}
-                      >
-                        Mensaje
-                      </a>
+                      {hasPhone(a) ? (
+                        <a
+                          href={waMsgUrl(a)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-sm btn-outline-success me-1"
+                        >
+                          Mensaje
+                        </a>
+                      ) : (
+                        <span className="btn btn-sm btn-outline-secondary disabled me-1">
+                          Mensaje
+                        </span>
+                      )}
                       {a.status === "pendiente" && (
                         <>
                           <button className="btn btn-sm btn-outline-success me-1" onClick={() => handleComplete(a.id)}>
@@ -250,14 +258,20 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                       <button className="btn btn-sm btn-outline-info me-1" onClick={() => openView(a)}>
                         Ver
                       </button>
-                      <a
-                        href={a.telefono ? waMsgUrl(a) : "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`btn btn-sm me-1 ${a.telefono ? "btn-outline-success" : "btn-outline-secondary disabled"}`}
-                      >
-                        Mensaje
-                      </a>
+                      {hasPhone(a) ? (
+                        <a
+                          href={waMsgUrl(a)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-sm btn-outline-success me-1"
+                        >
+                          Mensaje
+                        </a>
+                      ) : (
+                        <span className="btn btn-sm btn-outline-secondary disabled me-1">
+                          Mensaje
+                        </span>
+                      )}
                     </td>
                   )}
                 </tr>
