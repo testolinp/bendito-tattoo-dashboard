@@ -4,9 +4,13 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   getPaymentSummary,
+  getConfirmedNames,
+  confirmPayment,
+  undoConfirmPayment,
   type PaymentSummary,
   type PersonPayment,
 } from "@/lib/pagos-actions";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type Period = "day" | "week" | "month";
 
@@ -69,14 +73,38 @@ const fmt = (n: number) =>
     maximumFractionDigits: 2,
   });
 
-function PersonRow({ person }: { person: PersonPayment }) {
+function PersonRow({
+  person,
+  isConfirmed,
+  onConfirm,
+  onUndo,
+}: {
+  person: PersonPayment;
+  isConfirmed: boolean;
+  onConfirm: () => void;
+  onUndo: () => void;
+}) {
   const [expanded, setExpanded] = useState(false);
 
   return (
     <>
-      <tr>
+      <tr className={isConfirmed ? "table-success" : ""}>
         <td>{person.name}</td>
         <td>${fmt(person.total)}</td>
+        <td>
+          {isConfirmed ? (
+            <button
+              className="btn btn-sm btn-outline-success"
+              onClick={onUndo}
+            >
+              Pagado
+            </button>
+          ) : (
+            <button className="btn btn-sm btn-dark" onClick={onConfirm}>
+              Confirmar pago
+            </button>
+          )}
+        </td>
         <td>
           <button
             className="btn btn-sm btn-outline-secondary"
@@ -91,7 +119,7 @@ function PersonRow({ person }: { person: PersonPayment }) {
           <tr key={i} className="table-light">
             <td className="ps-4 text-muted">{r.role}</td>
             <td className="text-muted">${fmt(r.amount)}</td>
-            <td />
+            <td colSpan={2} />
           </tr>
         ))}
     </>
@@ -112,24 +140,63 @@ function PagosContent() {
   const [period, setPeriod] = useState<Period>(initialPeriod);
   const [offset, setOffset] = useState(0);
   const [summary, setSummary] = useState<PaymentSummary | null>(null);
+  const [confirmedNames, setConfirmedNames] = useState<Set<string>>(new Set());
+  const [confirmingPerson, setConfirmingPerson] = useState<{
+    name: string;
+    amount: number;
+  } | null>(null);
 
-  const fetchSummary = useCallback(async () => {
-    const { start, end } = getDateRange(period, offset);
-    const data = await getPaymentSummary(
-      start.toISOString(),
-      end.toISOString()
-    );
-    setSummary(data);
-  }, [period, offset]);
+  const { start, end, label } = getDateRange(period, offset);
+  const periodStart = start.toISOString();
+
+  const fetchData = useCallback(async () => {
+    const [summaryData, confirmed] = await Promise.all([
+      getPaymentSummary(start.toISOString(), end.toISOString()),
+      getConfirmedNames(periodStart),
+    ]);
+    setSummary(summaryData);
+    setConfirmedNames(confirmed);
+  }, [start, end, periodStart]);
 
   useEffect(() => {
-    fetchSummary();
-  }, [fetchSummary]);
+    fetchData();
+  }, [fetchData]);
 
-  const { label } = getDateRange(period, offset);
+  const handleConfirm = async () => {
+    if (!confirmingPerson) return;
+    await confirmPayment(
+      confirmingPerson.name,
+      periodStart,
+      confirmingPerson.amount
+    );
+    setConfirmingPerson(null);
+    setConfirmedNames(
+      new Set([...confirmedNames, confirmingPerson.name])
+    );
+  };
+
+  const handleUndo = async (name: string) => {
+    await undoConfirmPayment(name, periodStart);
+    const next = new Set(confirmedNames);
+    next.delete(name);
+    setConfirmedNames(next);
+  };
 
   return (
     <div>
+      <ConfirmDialog
+        open={confirmingPerson !== null}
+        title="Confirmar pago"
+        message={
+          confirmingPerson
+            ? `¿Confirmar pago de $${fmt(confirmingPerson.amount)} a ${confirmingPerson.name}?`
+            : ""
+        }
+        confirmLabel="Confirmar"
+        onConfirm={handleConfirm}
+        onCancel={() => setConfirmingPerson(null)}
+      />
+
       <h2 className="mb-4">Pagos</h2>
 
       <div className="d-flex flex-wrap align-items-center gap-2 mb-4">
@@ -183,19 +250,31 @@ function PagosContent() {
                 <tr>
                   <th>Nombre</th>
                   <th>Total a pagar</th>
+                  <th>Estado</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {summary.people.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="text-center text-muted py-3">
+                    <td colSpan={4} className="text-center text-muted py-3">
                       Sin datos para el período seleccionado
                     </td>
                   </tr>
                 ) : (
                   summary.people.map((p, i) => (
-                    <PersonRow key={i} person={p} />
+                    <PersonRow
+                      key={i}
+                      person={p}
+                      isConfirmed={confirmedNames.has(p.name)}
+                      onConfirm={() =>
+                        setConfirmingPerson({
+                          name: p.name,
+                          amount: p.total,
+                        })
+                      }
+                      onUndo={() => handleUndo(p.name)}
+                    />
                   ))
                 )}
               </tbody>

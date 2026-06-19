@@ -33,45 +33,15 @@ export async function getPaymentSummary(start: string, end: string) {
   const personMap = new Map<string, PersonPayment>();
 
   function extractName(val: unknown): string {
-    if (Array.isArray(val))
-      return (
-        (val[0] as { nickname?: string; name?: string })?.nickname ||
-        (val[0] as { name?: string })?.name ||
-        ""
-      );
-    if (val && typeof val === "object")
-      return (
-        (val as { nickname?: string })?.nickname ||
-        (val as { name?: string })?.name ||
-        ""
-      );
-    return "";
-  }
-
-  function addToPerson(
-    name: string,
-    role: string,
-    pct: number,
-    amount: number
-  ) {
-    if (!name || amount <= 0) return;
-    const existing = personMap.get(name);
-    if (existing) {
-      existing.total += amount;
-      const existingRole = existing.roles.find((r) => r.role === role);
-      if (existingRole) {
-        existingRole.amount += amount;
-        existingRole.pct += pct;
-      } else {
-        existing.roles.push({ role, pct, amount });
-      }
-    } else {
-      personMap.set(name, {
-        name,
-        total: amount,
-        roles: [{ role, pct, amount }],
-      });
+    if (Array.isArray(val) && val.length > 0) {
+      const item = val[0] as { nickname?: string; name?: string };
+      return item.nickname || item.name || "";
     }
+    if (val && typeof val === "object") {
+      const item = val as { nickname?: string; name?: string };
+      return item.nickname || item.name || "";
+    }
+    return "";
   }
 
   for (const t of data) {
@@ -83,13 +53,34 @@ export async function getPaymentSummary(start: string, end: string) {
     const pJal = Number(t.porcentaje_jalador || 0);
     const pGer = Number(t.porcentaje_gerente || 0);
 
-    const gerenteName = extractName(t.gerente);
-    const tatuadorName = extractName(t.tatuador);
-    const jaladorName = extractName(t.jalador);
+    const entries: { name: string; role: "Tatuador" | "Jalador" | "Gerente"; pct: number }[] = [
+      { name: extractName(t.tatuador), role: "Tatuador", pct: pTat },
+      { name: extractName(t.jalador), role: "Jalador", pct: pJal },
+      { name: extractName(t.gerente), role: "Gerente", pct: pGer },
+    ];
 
-    addToPerson(tatuadorName, "Tatuador", pTat, (quotePesos * pTat) / 100);
-    addToPerson(jaladorName, "Jalador", pJal, (quotePesos * pJal) / 100);
-    addToPerson(gerenteName, "Gerente", pGer, (quotePesos * pGer) / 100);
+    for (const { name, role, pct } of entries) {
+      if (!name || pct <= 0) continue;
+      const amount = (quotePesos * pct) / 100;
+      if (amount <= 0) continue;
+
+      const existing = personMap.get(name);
+      if (existing) {
+        existing.total += amount;
+        const existingRole = existing.roles.find((r) => r.role === role);
+        if (existingRole) {
+          existingRole.amount += amount;
+        } else {
+          existing.roles.push({ role, pct, amount });
+        }
+      } else {
+        personMap.set(name, {
+          name,
+          total: amount,
+          roles: [{ role, pct, amount }],
+        });
+      }
+    }
   }
 
   const people = Array.from(personMap.values()).sort(
@@ -100,4 +91,46 @@ export async function getPaymentSummary(start: string, end: string) {
     totalPagado: people.reduce((sum, p) => sum + p.total, 0),
     people,
   };
+}
+
+export async function getConfirmedNames(periodStart: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("pagos_realizados")
+    .select("person_name")
+    .eq("period_start", periodStart);
+
+  if (error) throw new Error(error.message);
+  return new Set(data.map((r) => r.person_name));
+}
+
+export async function confirmPayment(
+  personName: string,
+  periodStart: string,
+  amount: number
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { error } = await supabase.from("pagos_realizados").insert({
+    person_name: personName,
+    period_start: periodStart,
+    amount,
+    confirmed_by: user?.email ?? "",
+  });
+
+  if (error) throw new Error(error.message);
+}
+
+export async function undoConfirmPayment(personName: string, periodStart: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("pagos_realizados")
+    .delete()
+    .eq("person_name", personName)
+    .eq("period_start", periodStart);
+
+  if (error) throw new Error(error.message);
 }

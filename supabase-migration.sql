@@ -789,3 +789,19 @@ GRANT EXECUTE ON FUNCTION update_appointment(bigint, text, text, bigint, bigint,
 GRANT EXECUTE ON FUNCTION complete_appointment(bigint) TO authenticated;
 GRANT EXECUTE ON FUNCTION create_turno(text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, timestamptz) TO authenticated;
 GRANT EXECUTE ON FUNCTION update_turno(bigint, text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, timestamptz) TO authenticated;
+
+-- Table to track confirmed payments to staff per period
+CREATE TABLE IF NOT EXISTS pagos_realizados (
+  id BIGSERIAL PRIMARY KEY,
+  person_name TEXT NOT NULL,
+  period_start TIMESTAMPTZ NOT NULL,
+  amount NUMERIC(10,2) NOT NULL DEFAULT 0,
+  confirmed_at TIMESTAMPTZ DEFAULT now(),
+  confirmed_by TEXT NOT NULL DEFAULT ''
+);
+
+ALTER TABLE pagos_realizados ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON TABLE pagos_realizados TO anon;
+GRANT ALL ON TABLE pagos_realizados TO authenticated;
+GRANT ALL ON TABLE pagos_realizados TO service_role;
+CREATE POLICY "auth_all" ON pagos_realizados FOR ALL TO authenticated USING (true) WITH CHECK (true);
