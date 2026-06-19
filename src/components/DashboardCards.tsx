@@ -7,6 +7,7 @@ import {
   type TurnoRow,
 } from "@/lib/dashboard-actions";
 import { formatDateTime } from "@/lib/datetime-utils";
+import Link from "next/link";
 
 type Period = "day" | "week" | "month";
 
@@ -136,6 +137,9 @@ export default function DashboardCards() {
             ▶
           </button>
         </div>
+        <Link href="/dashboard/pagos" className="btn btn-sm btn-dark ms-auto">
+          Pagos
+        </Link>
       </div>
 
       {stats && (

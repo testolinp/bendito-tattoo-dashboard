@@ -171,9 +171,9 @@ export default function TurnosTable({
     setFormPagPesos("");
     setFormPagUsd("");
     setFormPagEur("");
-    setFormPorcTat("");
-    setFormPorcJal("");
-    setFormPorcGer("");
+    setFormPorcTat("40");
+    setFormPorcJal("10");
+    setFormPorcGer("10");
     setModalOpen(true);
   };
 
@@ -464,7 +464,6 @@ export default function TurnosTable({
                             name="forma_pago"
                             className="form-select"
                             defaultValue={editing?.forma_pago ?? ""}
-                            required
                             disabled={!!editing}
                             tabIndex={editing ? -1 : 0}
                             style={editing ? { outline: "none", boxShadow: "none" } : undefined}
@@ -538,7 +537,6 @@ export default function TurnosTable({
                         name="pago_forma_pago"
                         className="form-select"
                         defaultValue={editing?.pago_forma_pago ?? ""}
-                        required
                       >
                         <option value="">Seleccionar</option>
                         <option value="Efectivo">Efectivo</option>

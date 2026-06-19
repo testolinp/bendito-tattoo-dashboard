@@ -12,6 +12,7 @@ const navItems = [
   { label: "Gerentes", href: "/dashboard/gerentes" },
   { label: "Jaladores", href: "/dashboard/jaladores" },
   { label: "Tatuadores", href: "/dashboard/tatuadores" },
+  { label: "Cuentas", href: "/dashboard/cuentas" },
 ];
 
 type Props = {
