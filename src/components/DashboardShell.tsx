@@ -13,6 +13,7 @@ const navItems = [
   { label: "Jaladores", href: "/dashboard/jaladores" },
   { label: "Tatuadores", href: "/dashboard/tatuadores" },
   { label: "Cuentas", href: "/dashboard/cuentas" },
+  { label: "Pagos", href: "/dashboard/pagos" },
 ];
 
 type Props = {

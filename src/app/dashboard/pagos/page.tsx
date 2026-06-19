@@ -12,10 +12,9 @@ import {
 } from "@/lib/pagos-actions";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
-type Period = "day" | "week" | "month";
+type Period = "week" | "month";
 
 const periodLabels: Record<Period, string> = {
-  day: "Hoy",
   week: "Semana",
   month: "Mes",
 };
@@ -23,23 +22,6 @@ const periodLabels: Record<Period, string> = {
 function getDateRange(period: Period, offset: number) {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
-
-  if (period === "day") {
-    const d = new Date(now);
-    d.setDate(d.getDate() + offset);
-    const start = new Date(d);
-    const end = new Date(d);
-    end.setDate(end.getDate() + 1);
-    return {
-      start,
-      end,
-      label: d.toLocaleDateString("es-MX", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }),
-    };
-  }
 
   if (period === "week") {
     const d = new Date(now);
@@ -136,7 +118,8 @@ export default function PagosPage() {
 
 function PagosContent() {
   const searchParams = useSearchParams();
-  const initialPeriod = (searchParams.get("period") as Period) || "day";
+  const initialPeriodRaw = searchParams.get("period");
+  const initialPeriod: Period = initialPeriodRaw === "week" || initialPeriodRaw === "month" ? initialPeriodRaw : "week";
   const [period, setPeriod] = useState<Period>(initialPeriod);
   const [offset, setOffset] = useState(0);
   const [summary, setSummary] = useState<PaymentSummary | null>(null);
