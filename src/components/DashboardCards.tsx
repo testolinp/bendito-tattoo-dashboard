@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   getIncomeStats,
   type IncomeStats,
@@ -76,8 +77,25 @@ const fmt = (n: number) =>
 // formatDateTime now imported from datetime-utils
 
 export default function DashboardCards() {
-  const [period, setPeriod] = useState<Period>("day");
-  const [offset, setOffset] = useState(0);
+  return (
+    <Suspense fallback={<div className="p-4 text-muted">Cargando...</div>}>
+      <DashboardCardsInner />
+    </Suspense>
+  );
+}
+
+function DashboardCardsInner() {
+  const searchParams = useSearchParams();
+  const periodParam = searchParams.get("period");
+  const offsetParam = searchParams.get("offset");
+  const initialPeriod: Period =
+    periodParam === "day" || periodParam === "week" || periodParam === "month"
+      ? periodParam
+      : "day";
+  const initialOffset = offsetParam ? parseInt(offsetParam, 10) : 0;
+
+  const [period, setPeriod] = useState<Period>(initialPeriod);
+  const [offset, setOffset] = useState(initialOffset);
   const [stats, setStats] = useState<IncomeStats | null>(null);
   const [viewing, setViewing] = useState<TurnoRow | null>(null);
   const viewModalRef = useRef<HTMLDivElement>(null);
@@ -95,6 +113,13 @@ export default function DashboardCards() {
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("period", period);
+    params.set("offset", String(offset));
+    window.history.replaceState(null, "", `?${params.toString()}`);
+  }, [period, offset]);
 
   const { label } = getDateRange(period, offset);
 
@@ -137,14 +162,19 @@ export default function DashboardCards() {
             ▶
           </button>
         </div>
-        <Link href={`/dashboard/pagos?period=${period}`} className="btn btn-sm btn-dark ms-auto">
-          Pagos
-        </Link>
+        <div className="d-flex gap-2 ms-auto">
+          <Link href={`/dashboard/pagos?period=${period}`} className="btn btn-sm btn-dark">
+            Pagos
+          </Link>
+          <button className="btn btn-sm btn-outline-secondary" onClick={() => window.print()}>
+            Imprimir
+          </button>
+        </div>
       </div>
 
       {stats && (
         <>
-          <div className="row g-3 mb-3">
+          <div className="row stats-cards g-3 mb-3">
             <div className="col-md-2">
               <div className="card text-bg-dark">
                 <div className="card-body">

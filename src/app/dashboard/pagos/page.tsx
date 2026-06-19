@@ -128,6 +128,7 @@ function PagosContent() {
   const [period, setPeriod] = useState<Period>(initialPeriod);
   const [offset, setOffset] = useState(0);
   const [summary, setSummary] = useState<PaymentSummary | null>(null);
+  const [loading, setLoading] = useState(true);
   const [confirmedMap, setConfirmedMap] = useState<Map<string, string>>(new Map());
   const [confirmingPerson, setConfirmingPerson] = useState<{
     name: string;
@@ -146,12 +147,14 @@ function PagosContent() {
   }, [confirmingPerson]);
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
     const [summaryData, confirmedPayments] = await Promise.all([
       getPaymentSummary(startISO, endISO),
       getConfirmedPayments(periodStart),
     ]);
     setSummary(summaryData);
     setConfirmedMap(new Map(confirmedPayments.map((c) => [c.person_name, c.payment_method])));
+    setLoading(false);
   }, [startISO, endISO, periodStart]);
 
   useEffect(() => {
@@ -287,7 +290,13 @@ function PagosContent() {
         </div>
       </div>
 
-      {summary && (
+      {loading ? (
+        <div className="d-flex justify-content-center align-items-center" style={{ height: "calc(100vh - 12rem)" }}>
+          <div className="spinner-border text-dark" style={{ width: "3rem", height: "3rem" }} role="status">
+            <span className="visually-hidden">Cargando...</span>
+          </div>
+        </div>
+      ) : summary ? (
         <div className="card">
           <div className="card-header d-flex justify-content-between align-items-center">
             <span>Resumen por persona</span>
@@ -325,7 +334,7 @@ function PagosContent() {
             </table>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
