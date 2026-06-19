@@ -137,7 +137,7 @@ export default function DashboardCards() {
             ▶
           </button>
         </div>
-        <Link href="/dashboard/pagos" className="btn btn-sm btn-dark ms-auto">
+        <Link href={`/dashboard/pagos?period=${period}`} className="btn btn-sm btn-dark ms-auto">
           Pagos
         </Link>
       </div>
