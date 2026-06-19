@@ -189,12 +189,12 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
             <thead className="table-light">
               <tr>
                 <th>Nombre</th>
-                <th>Gerente</th>
-                <th>Tatuador</th>
-                <th>Jalador</th>
-                <th>Cotización</th>
+                <th className="d-none d-md-table-cell">Gerente</th>
+                <th className="d-none d-md-table-cell">Tatuador</th>
+                <th className="d-none d-md-table-cell">Jalador</th>
+                <th className="d-none d-md-table-cell">Cotización</th>
                 <th>Fecha de cita</th>
-                <th>Estado</th>
+                <th className="d-none d-md-table-cell">Estado</th>
                 <th style={{ width: 220 }}>Acciones</th>
               </tr>
             </thead>
@@ -209,12 +209,12 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
               {slice.map((a) => (
                 <tr key={a.id}>
                   <td>{a.name}</td>
-                  <td>{gerenteLabelById.get(a.gerente_id) ?? a.gerente_name}</td>
-                  <td>{tatuadorLabelById.get(a.tatuador_id) ?? a.tatuador_name}</td>
-                  <td>{jaladorLabelById.get(a.jalador_id) ?? a.jalador_name}</td>
-                  <td>{Number(a.cotizacion).toFixed(2)} {a.moneda === "Pesos" ? "$" : a.moneda}</td>
+                  <td className="d-none d-md-table-cell">{gerenteLabelById.get(a.gerente_id) ?? a.gerente_name}</td>
+                  <td className="d-none d-md-table-cell">{tatuadorLabelById.get(a.tatuador_id) ?? a.tatuador_name}</td>
+                  <td className="d-none d-md-table-cell">{jaladorLabelById.get(a.jalador_id) ?? a.jalador_name}</td>
+                  <td className="d-none d-md-table-cell">{Number(a.cotizacion).toFixed(2)} {a.moneda === "Pesos" ? "$" : a.moneda}</td>
                   <td>{formatDateTime(a.fecha_cita)}</td>
-                  <td>
+                  <td className="d-none d-md-table-cell">
                     <span className={`badge ${statusColors[a.status] || "bg-secondary"}`}>
                       {statusLabels[a.status] || a.status}
                     </span>
@@ -478,6 +478,14 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                   <div className="col-md-6">
                     <label className="form-label text-muted small">Teléfono</label>
                     <div className="fw-semibold">{viewing.telefono || "-"}</div>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label text-muted small">Estado</label>
+                    <div className="fw-semibold">
+                      <span className={`badge ${statusColors[viewing.status] || "bg-secondary"}`}>
+                        {statusLabels[viewing.status] || viewing.status}
+                      </span>
+                    </div>
                   </div>
                   <div className="col-md-6">
                     <label className="form-label text-muted small">Gerente</label>

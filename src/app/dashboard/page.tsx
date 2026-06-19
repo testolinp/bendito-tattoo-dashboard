@@ -12,9 +12,5 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  return (
-    <>
-      <h2 className="h4 mb-4">Dashboard</h2>
-      <DashboardCards />
-    </>);
+  return <DashboardCards />;
 }

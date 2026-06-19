@@ -125,6 +125,17 @@ function DashboardCardsInner() {
 
   return (
     <>
+      <div className="d-flex flex-wrap align-items-center justify-content-between mb-4">
+        <h2 className="h4 mb-0">Dashboard</h2>
+        <div className="d-flex gap-2">
+          <Link href={`/dashboard/pagos?period=${period}`} className="btn btn-sm btn-dark">
+            Pagos
+          </Link>
+          <button className="btn btn-sm btn-outline-secondary" onClick={() => window.print()}>
+            Imprimir
+          </button>
+        </div>
+      </div>
       <div className="d-flex flex-wrap align-items-center gap-2 mb-4">
         <div className="btn-group" role="group">
           {(Object.entries(periodLabels) as [Period, string][]).map(
@@ -160,14 +171,6 @@ function DashboardCardsInner() {
             onClick={() => setOffset((o) => o + 1)}
           >
             ▶
-          </button>
-        </div>
-        <div className="d-flex gap-2 ms-auto">
-          <Link href={`/dashboard/pagos?period=${period}`} className="btn btn-sm btn-dark">
-            Pagos
-          </Link>
-          <button className="btn btn-sm btn-outline-secondary" onClick={() => window.print()}>
-            Imprimir
           </button>
         </div>
       </div>
@@ -234,11 +237,11 @@ function DashboardCardsInner() {
                     <tr>
                       <th>Fecha</th>
                       <th>Cliente</th>
-                      <th>Gerente</th>
-                      <th>Tatuador</th>
-                      <th>Jalador</th>
+                      <th className="d-none d-md-table-cell">Gerente</th>
+                      <th className="d-none d-md-table-cell">Tatuador</th>
+                      <th className="d-none d-md-table-cell">Jalador</th>
                       <th>Cotización</th>
-                      <th>Acción</th>
+                      <th className="d-print-none">Acción</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -246,14 +249,14 @@ function DashboardCardsInner() {
                       <tr key={t.id}>
                         <td>{formatDateTime(t.fecha_cita)}</td>
                         <td>{t.name}</td>
-                        <td>{t.gerente_name}</td>
-                        <td>{t.tatuador_name}</td>
-                        <td>{t.jalador_name}</td>
+                        <td className="d-none d-md-table-cell">{t.gerente_name}</td>
+                        <td className="d-none d-md-table-cell">{t.tatuador_name}</td>
+                        <td className="d-none d-md-table-cell">{t.jalador_name}</td>
                         <td>
                           ${fmt(t.cotizacion)}{" "}
                           {t.moneda === "Pesos" ? "$" : t.moneda}
                         </td>
-                        <td>
+                        <td className="d-print-none">
                           <button
                             className="btn btn-sm btn-outline-dark"
                             onClick={() => setViewing(t)}
@@ -309,16 +312,21 @@ function DashboardCardsInner() {
             <div className="card-header">Tienda</div>
             <div className="card-body">
               <div className="row g-3">
-                <div className="col-md-4">
-                  <h6 className="card-title mb-1">Pesos</h6>
+                <div className="col-md-3">
+                  <h6 className="card-title mb-1">Monto en pesos</h6>
                   <p className="h5 mb-0">${fmt(stats.totalShop)}</p>
-                  <small className="text-muted">Restante de cotización en pesos</small>
                 </div>
-                <div className="col-md-4">
+                <div className="col-md-3">
+                  <h6 className="card-title mb-1">Restante de cotización en pesos</h6>
+                  <p className="h5 mb-0">
+                    ${fmt(stats.totalShop + (stats.totalDepUsd + stats.totalPagUsd) * 16 + (stats.totalDepEuros + stats.totalPagEuros) * 19)}
+                  </p>
+                </div>
+                <div className="col-md-3">
                   <h6 className="card-title mb-1">USD</h6>
                   <p className="h5 mb-0">${fmt(stats.totalDepUsd + stats.totalPagUsd)}</p>
                 </div>
-                <div className="col-md-4">
+                <div className="col-md-3">
                   <h6 className="card-title mb-1">Euros</h6>
                   <p className="h5 mb-0">€{fmt(stats.totalDepEuros + stats.totalPagEuros)}</p>
                 </div>

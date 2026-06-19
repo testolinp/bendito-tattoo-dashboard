@@ -28,19 +28,23 @@ export default function DashboardShell({ children, userEmail, isAdmin }: Props) 
 
   return (
     <div className="d-flex min-vh-100">
-      <button
-        className="btn btn-dark d-md-none position-fixed top-0 start-0 m-2"
-        style={{ zIndex: 1050 }}
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        ☰
-      </button>
+      <style>{`
+        @media (max-width: 767.98px) {
+          .main-content > .p-4 { padding-top: 4.5rem !important; }
+        }
+      `}</style>
+      <div className="d-md-none position-fixed top-0 start-0 w-100 bg-dark text-white d-flex align-items-center justify-content-between ps-4 pe-3 py-2" style={{ zIndex: 1050 }}>
+        <h6 className="mb-0">Bendito Tattoo</h6>
+        <button className="btn btn-sm btn-outline-light border-0 fs-4" onClick={() => setSidebarOpen(!sidebarOpen)}>
+          ☰
+        </button>
+      </div>
 
       <div
         className={`bg-dark text-white d-flex flex-column ${
           sidebarOpen ? "d-flex" : "d-none"
         } d-md-flex`}
-        style={{ width: 250, minHeight: "100vh", position: "fixed", zIndex: 1040 }}
+        style={{ width: 250, minHeight: "100vh", position: "fixed", zIndex: 1052 }}
       >
         <div className="p-3 border-bottom border-secondary">
           <h5 className="mb-0">Bendito Tattoo</h5>
@@ -91,7 +95,7 @@ export default function DashboardShell({ children, userEmail, isAdmin }: Props) 
       {sidebarOpen && (
         <div
           className="d-md-none position-fixed top-0 start-0 w-100 h-100"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1030 }}
+          style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1051 }}
           onClick={() => setSidebarOpen(false)}
         />
       )}

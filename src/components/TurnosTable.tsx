@@ -800,10 +800,10 @@ export default function TurnosTable({
             <thead className="table-light">
               <tr>
                 <th>Nombre</th>
-                <th>Gerente</th>
-                <th>Tatuador</th>
-                <th>Jalador</th>
-                <th>Cotización</th>
+                <th className="d-none d-md-table-cell">Gerente</th>
+                <th className="d-none d-md-table-cell">Tatuador</th>
+                <th className="d-none d-md-table-cell">Jalador</th>
+                <th className="d-none d-md-table-cell">Cotización</th>
                 <th>Fecha de cita</th>
                 <th style={{ width: 160 }}>Acciones</th>
               </tr>
@@ -819,16 +819,16 @@ export default function TurnosTable({
               {upcomingTurnos.map((t) => (
                 <tr key={t.id}>
                   <td>{t.name}</td>
-                  <td>
+                  <td className="d-none d-md-table-cell">
                     {gerenteLabelById.get(t.gerente_id) ?? t.gerente_name}
                   </td>
-                  <td>
+                  <td className="d-none d-md-table-cell">
                     {tatuadorLabelById.get(t.tatuador_id) ?? t.tatuador_name}
                   </td>
-                  <td>
+                  <td className="d-none d-md-table-cell">
                     {jaladorLabelById.get(t.jalador_id) ?? t.jalador_name}
                   </td>
-                  <td>
+                  <td className="d-none d-md-table-cell">
                     {Number(t.cotizacion).toFixed(2)}{" "}
                     {t.moneda === "Pesos" ? "$" : t.moneda}
                   </td>
@@ -880,10 +880,10 @@ export default function TurnosTable({
             <thead className="table-light">
               <tr>
                 <th>Nombre</th>
-                <th>Gerente</th>
-                <th>Tatuador</th>
-                <th>Jalador</th>
-                <th>Cotización</th>
+                <th className="d-none d-md-table-cell">Gerente</th>
+                <th className="d-none d-md-table-cell">Tatuador</th>
+                <th className="d-none d-md-table-cell">Jalador</th>
+                <th className="d-none d-md-table-cell">Cotización</th>
                 <th>Fecha de cita</th>
                 <th style={{ width: 160 }}>Acciones</th>
               </tr>
@@ -899,14 +899,14 @@ export default function TurnosTable({
               {pastSlice.map((t) => (
                 <tr key={t.id}>
                   <td>{t.name}</td>
-                  <td>
+                  <td className="d-none d-md-table-cell">
                     {gerenteLabelById.get(t.gerente_id) ?? t.gerente_name}
                   </td>
-                  <td>
+                  <td className="d-none d-md-table-cell">
                     {tatuadorLabelById.get(t.tatuador_id) ?? t.tatuador_name}
                   </td>
-                  <td>{t.jalador_name}</td>
-                  <td>
+                  <td className="d-none d-md-table-cell">{t.jalador_name}</td>
+                  <td className="d-none d-md-table-cell">
                     {Number(t.cotizacion).toFixed(2)}{" "}
                     {t.moneda === "Pesos" ? "$" : t.moneda}
                   </td>

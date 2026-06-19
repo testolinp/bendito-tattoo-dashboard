@@ -231,32 +231,24 @@ function CuentasContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>Pesos</td>
-                    <td className="text-end">—</td>
-                    <td className="text-end">—</td>
-                    <td className="text-end">—</td>
-                    <td className="text-end fw-bold">
-                      ${fmt(summary.tienda.pesos)}
-                    </td>
-                  </tr>
+                  <BreakdownRow label="Pesos" data={summary.tienda.pesos} />
                   <BreakdownRow label="USD" data={summary.tienda.usd} />
                   <BreakdownRow label="Euros" data={summary.tienda.euros} />
                 </tbody>
                 <tfoot className="table-light">
                   <tr>
-                    <td className="fw-bold">Total tienda</td>
+                    <td className="fw-bold">Total tienda (en pesos)</td>
                     <td className="text-end fw-bold">
-                      ${fmt(summary.tienda.usd.efectivo + summary.tienda.euros.efectivo)}
+                      ${fmt(summary.tienda.pesos.efectivo + summary.tienda.usd.efectivo * 16 + summary.tienda.euros.efectivo * 19)}
                     </td>
                     <td className="text-end fw-bold">
-                      ${fmt(summary.tienda.usd.deposito + summary.tienda.euros.deposito)}
+                      ${fmt(summary.tienda.pesos.deposito + summary.tienda.usd.deposito * 16 + summary.tienda.euros.deposito * 19)}
                     </td>
                     <td className="text-end fw-bold">
-                      ${fmt(summary.tienda.usd.tarjeta + summary.tienda.euros.tarjeta)}
+                      ${fmt(summary.tienda.pesos.tarjeta + summary.tienda.usd.tarjeta * 16 + summary.tienda.euros.tarjeta * 19)}
                     </td>
                     <td className="text-end fw-bold">
-                      ${fmt(summary.tienda.pesos + summary.tienda.usd.total + summary.tienda.euros.total)}
+                      ${fmt(summary.tienda.pesos.total + summary.tienda.usd.total * 16 + summary.tienda.euros.total * 19)}
                     </td>
                   </tr>
                 </tfoot>

@@ -22,7 +22,7 @@ export type CuentasSummary = {
     total: number;
   };
   tienda: {
-    pesos: number;
+    pesos: CurrencyBreakdown;
     usd: CurrencyBreakdown;
     euros: CurrencyBreakdown;
   };
@@ -66,7 +66,7 @@ export async function getCuentasSummary(start: string, end: string) {
 
   const usdShop: CurrencyBreakdown = { efectivo: 0, deposito: 0, tarjeta: 0, total: 0 };
   const eurosShop: CurrencyBreakdown = { efectivo: 0, deposito: 0, tarjeta: 0, total: 0 };
-  let pesosShop = 0;
+  const pesosShop: CurrencyBreakdown = { efectivo: 0, deposito: 0, tarjeta: 0, total: 0 };
 
   for (const t of data) {
     const dp = Number(t.deposito_pesos);
@@ -93,7 +93,10 @@ export async function getCuentasSummary(start: string, end: string) {
     addToBreakdown(eurosShop, fp, de);
     addToBreakdown(eurosShop, pfp, pe);
 
-    // For peso transactions: shop keeps what's left after commissions
+    // Track all peso income into pesosShop (commissions subtracted later)
+    addToBreakdown(pesosShop, fp, dp);
+    addToBreakdown(pesosShop, pfp, pp);
+
     const cot = Number(t.cotizacion);
     const rate = t.moneda === "USD" ? 16 : t.moneda === "Euros" ? 19 : 1;
     const quotePesos = cot * rate;
@@ -109,14 +112,17 @@ export async function getCuentasSummary(start: string, end: string) {
     comisionTat += mTat;
     comisionJal += mJal;
     comisionGer += mGer;
-
-    if (t.moneda === "Pesos") {
-      pesosShop += quotePesos - mTat - mJal - mGer;
-    } else {
-      // Commissions paid from peso income reduce the shop's pesos
-      pesosShop -= mTat + mJal + mGer;
-    }
   }
+
+  // Subtract commissions from the shop's peso breakdown proportionally
+  const totalComisiones = comisionTat + comisionJal + comisionGer;
+  if (totalComisiones > 0 && pesosShop.total > 0) {
+    const ratio = 1 - totalComisiones / pesosShop.total;
+    pesosShop.efectivo = Math.round(pesosShop.efectivo * ratio * 100) / 100;
+    pesosShop.deposito = Math.round(pesosShop.deposito * ratio * 100) / 100;
+    pesosShop.tarjeta = Math.round(pesosShop.tarjeta * ratio * 100) / 100;
+  }
+  pesosShop.total = Math.round((pesosShop.total - totalComisiones) * 100) / 100;
 
   return {
     ingresos,
