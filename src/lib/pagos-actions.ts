@@ -5,12 +5,18 @@ import { createClient } from "@/lib/supabase/server";
 export type PersonPayment = {
   name: string;
   total: number;
+  cashOnly: boolean;
   roles: { role: string; pct: number; amount: number }[];
 };
 
 export type PaymentSummary = {
   totalPagado: number;
   people: PersonPayment[];
+};
+
+export type ConfirmedInfo = {
+  person_name: string;
+  payment_method: string;
 };
 
 export async function getPaymentSummary(start: string, end: string) {
@@ -21,9 +27,9 @@ export async function getPaymentSummary(start: string, end: string) {
       `id, cotizacion, moneda,
        gerente_id, tatuador_id, jalador_id,
        porcentaje_tatuador, porcentaje_jalador, porcentaje_gerente,
-       gerente:staff!gerente_id(nickname, name),
-       tatuador:staff!tatuador_id(nickname, name),
-       jalador:staff!jalador_id(nickname, name)`
+       gerente:staff!gerente_id(nickname, name, cash_only),
+        tatuador:staff!tatuador_id(nickname, name, cash_only),
+        jalador:staff!jalador_id(nickname, name, cash_only)`
     )
     .gte("fecha_cita", start)
     .lt("fecha_cita", end);
@@ -32,16 +38,18 @@ export async function getPaymentSummary(start: string, end: string) {
 
   const personMap = new Map<string, PersonPayment>();
 
-  function extractName(val: unknown): string {
+  function extractStaff(val: unknown): { name: string; cashOnly: boolean } | null {
+    let item: { nickname?: string; name?: string; cash_only?: boolean } | null = null;
     if (Array.isArray(val) && val.length > 0) {
-      const item = val[0] as { nickname?: string; name?: string };
-      return item.nickname || item.name || "";
+      item = val[0] as { nickname?: string; name?: string; cash_only?: boolean };
+    } else if (val && typeof val === "object") {
+      item = val as { nickname?: string; name?: string; cash_only?: boolean };
     }
-    if (val && typeof val === "object") {
-      const item = val as { nickname?: string; name?: string };
-      return item.nickname || item.name || "";
-    }
-    return "";
+    if (!item) return null;
+    return {
+      name: item.nickname || item.name || "",
+      cashOnly: item.cash_only === true,
+    };
   }
 
   for (const t of data) {
@@ -53,13 +61,13 @@ export async function getPaymentSummary(start: string, end: string) {
     const pJal = Number(t.porcentaje_jalador || 0);
     const pGer = Number(t.porcentaje_gerente || 0);
 
-    const entries: { name: string; role: "Tatuador" | "Jalador" | "Gerente"; pct: number }[] = [
-      { name: extractName(t.tatuador), role: "Tatuador", pct: pTat },
-      { name: extractName(t.jalador), role: "Jalador", pct: pJal },
-      { name: extractName(t.gerente), role: "Gerente", pct: pGer },
+    const entries: { name: string; cashOnly: boolean; role: "Tatuador" | "Jalador" | "Gerente"; pct: number }[] = [
+      { ...extractStaff(t.tatuador) ?? { name: "", cashOnly: false }, role: "Tatuador", pct: pTat },
+      { ...extractStaff(t.jalador) ?? { name: "", cashOnly: false }, role: "Jalador", pct: pJal },
+      { ...extractStaff(t.gerente) ?? { name: "", cashOnly: false }, role: "Gerente", pct: pGer },
     ];
 
-    for (const { name, role, pct } of entries) {
+    for (const { name, cashOnly, role, pct } of entries) {
       if (!name || pct <= 0) continue;
       const amount = (quotePesos * pct) / 100;
       if (amount <= 0) continue;
@@ -77,6 +85,7 @@ export async function getPaymentSummary(start: string, end: string) {
         personMap.set(name, {
           name,
           total: amount,
+          cashOnly,
           roles: [{ role, pct, amount }],
         });
       }
@@ -93,21 +102,22 @@ export async function getPaymentSummary(start: string, end: string) {
   };
 }
 
-export async function getConfirmedNames(periodStart: string) {
+export async function getConfirmedPayments(periodStart: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("pagos_realizados")
-    .select("person_name")
+    .select("person_name, payment_method")
     .eq("period_start", periodStart);
 
   if (error) throw new Error(error.message);
-  return new Set(data.map((r) => r.person_name));
+  return data as ConfirmedInfo[];
 }
 
 export async function confirmPayment(
   personName: string,
   periodStart: string,
-  amount: number
+  amount: number,
+  paymentMethod: string
 ) {
   const supabase = await createClient();
   const {
@@ -118,6 +128,7 @@ export async function confirmPayment(
     person_name: personName,
     period_start: periodStart,
     amount,
+    payment_method: paymentMethod,
     confirmed_by: user?.email ?? "",
   });
 

@@ -796,6 +796,7 @@ CREATE TABLE IF NOT EXISTS pagos_realizados (
   person_name TEXT NOT NULL,
   period_start TIMESTAMPTZ NOT NULL,
   amount NUMERIC(10,2) NOT NULL DEFAULT 0,
+  payment_method TEXT NOT NULL DEFAULT '',
   confirmed_at TIMESTAMPTZ DEFAULT now(),
   confirmed_by TEXT NOT NULL DEFAULT ''
 );

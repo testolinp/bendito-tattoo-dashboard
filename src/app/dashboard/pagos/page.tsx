@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   getPaymentSummary,
-  getConfirmedNames,
+  getConfirmedPayments,
   confirmPayment,
   undoConfirmPayment,
   type PaymentSummary,
   type PersonPayment,
 } from "@/lib/pagos-actions";
-import ConfirmDialog from "@/components/ConfirmDialog";
 
 type Period = "week" | "month";
 
@@ -57,12 +56,12 @@ const fmt = (n: number) =>
 
 function PersonRow({
   person,
-  isConfirmed,
+  paymentMethod,
   onConfirm,
   onUndo,
 }: {
   person: PersonPayment;
-  isConfirmed: boolean;
+  paymentMethod: string | null;
   onConfirm: () => void;
   onUndo: () => void;
 }) {
@@ -70,24 +69,30 @@ function PersonRow({
 
   return (
     <>
-      <tr className={isConfirmed ? "table-success" : ""}>
+      <tr className={paymentMethod ? "table-success" : ""}>
         <td>{person.name}</td>
         <td>${fmt(person.total)}</td>
         <td>
-          {isConfirmed ? (
-            <button
-              className="btn btn-sm btn-outline-success"
-              onClick={onUndo}
-            >
-              Pagado
-            </button>
+          {paymentMethod ? (
+            <span className="text-success fw-semibold small">
+              Pagado ({paymentMethod})
+            </span>
           ) : (
             <button className="btn btn-sm btn-dark" onClick={onConfirm}>
               Confirmar pago
             </button>
           )}
         </td>
-        <td>
+        <td className="text-end" style={{ minWidth: 80 }}>
+          {paymentMethod ? (
+            <button
+              className="btn btn-sm btn-outline-success me-1"
+              onClick={onUndo}
+              title="Deshacer"
+            >
+              ↩
+            </button>
+          ) : null}
           <button
             className="btn btn-sm btn-outline-secondary"
             onClick={() => setExpanded(!expanded)}
@@ -123,22 +128,28 @@ function PagosContent() {
   const [period, setPeriod] = useState<Period>(initialPeriod);
   const [offset, setOffset] = useState(0);
   const [summary, setSummary] = useState<PaymentSummary | null>(null);
-  const [confirmedNames, setConfirmedNames] = useState<Set<string>>(new Set());
+  const [confirmedMap, setConfirmedMap] = useState<Map<string, string>>(new Map());
   const [confirmingPerson, setConfirmingPerson] = useState<{
     name: string;
     amount: number;
   } | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState("Efectivo");
+  const modalRef = useRef<HTMLDivElement>(null);
 
   const { start, end, label } = getDateRange(period, offset);
   const periodStart = start.toISOString();
 
+  useEffect(() => {
+    if (confirmingPerson) modalRef.current?.focus();
+  }, [confirmingPerson]);
+
   const fetchData = useCallback(async () => {
-    const [summaryData, confirmed] = await Promise.all([
+    const [summaryData, confirmedPayments] = await Promise.all([
       getPaymentSummary(start.toISOString(), end.toISOString()),
-      getConfirmedNames(periodStart),
+      getConfirmedPayments(periodStart),
     ]);
     setSummary(summaryData);
-    setConfirmedNames(confirmed);
+    setConfirmedMap(new Map(confirmedPayments.map((c) => [c.person_name, c.payment_method])));
   }, [start, end, periodStart]);
 
   useEffect(() => {
@@ -150,35 +161,88 @@ function PagosContent() {
     await confirmPayment(
       confirmingPerson.name,
       periodStart,
-      confirmingPerson.amount
+      confirmingPerson.amount,
+      paymentMethod
     );
+    const next = new Map(confirmedMap);
+    next.set(confirmingPerson.name, paymentMethod);
+    setConfirmedMap(next);
     setConfirmingPerson(null);
-    setConfirmedNames(
-      new Set([...confirmedNames, confirmingPerson.name])
-    );
+    setPaymentMethod("Efectivo");
   };
 
   const handleUndo = async (name: string) => {
     await undoConfirmPayment(name, periodStart);
-    const next = new Set(confirmedNames);
+    const next = new Map(confirmedMap);
     next.delete(name);
-    setConfirmedNames(next);
+    setConfirmedMap(next);
+  };
+
+  const openConfirm = (name: string, amount: number, cashOnly: boolean) => {
+    setPaymentMethod(cashOnly ? "Efectivo" : "Depósito");
+    setConfirmingPerson({ name, amount });
   };
 
   return (
     <div>
-      <ConfirmDialog
-        open={confirmingPerson !== null}
-        title="Confirmar pago"
-        message={
-          confirmingPerson
-            ? `¿Confirmar pago de $${fmt(confirmingPerson.amount)} a ${confirmingPerson.name}?`
-            : ""
-        }
-        confirmLabel="Confirmar"
-        onConfirm={handleConfirm}
-        onCancel={() => setConfirmingPerson(null)}
-      />
+      {/* Confirm modal */}
+      {confirmingPerson && (
+        <div
+          className="modal d-block"
+          tabIndex={-1}
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          ref={modalRef}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setConfirmingPerson(null);
+          }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirmar pago</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setConfirmingPerson(null)}
+                />
+              </div>
+              <div className="modal-body">
+                <p>
+                  ¿Confirmar pago de <strong>${fmt(confirmingPerson.amount)}</strong> a{" "}
+                  <strong>{confirmingPerson.name}</strong>?
+                </p>
+                <div className="mb-3">
+                  <label className="form-label">Método de pago</label>
+                  <select
+                    className="form-select"
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Depósito">Depósito</option>
+                  </select>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setConfirmingPerson(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-dark"
+                  onClick={handleConfirm}
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <h2 className="mb-4">Pagos</h2>
 
@@ -234,7 +298,7 @@ function PagosContent() {
                   <th>Nombre</th>
                   <th>Total a pagar</th>
                   <th>Estado</th>
-                  <th></th>
+                  <th className="text-end">Acción</th>
                 </tr>
               </thead>
               <tbody>
@@ -249,13 +313,8 @@ function PagosContent() {
                     <PersonRow
                       key={i}
                       person={p}
-                      isConfirmed={confirmedNames.has(p.name)}
-                      onConfirm={() =>
-                        setConfirmingPerson({
-                          name: p.name,
-                          amount: p.total,
-                        })
-                      }
+                      paymentMethod={confirmedMap.get(p.name) ?? null}
+                      onConfirm={() => openConfirm(p.name, p.total, p.cashOnly)}
                       onUndo={() => handleUndo(p.name)}
                     />
                   ))
