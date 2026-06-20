@@ -186,7 +186,7 @@ function PagosContent() {
   };
 
   const openConfirm = (name: string, amount: number, cashOnly: boolean) => {
-    setPaymentMethod(cashOnly ? "Efectivo" : "Depósito");
+    setPaymentMethod(cashOnly ? "Efectivo" : "Deposito");
     setConfirmingPerson({ name, amount });
   };
 
@@ -226,7 +226,7 @@ function PagosContent() {
                     onChange={(e) => setPaymentMethod(e.target.value)}
                   >
                     <option value="Efectivo">Efectivo</option>
-                    <option value="Depósito">Depósito</option>
+                    <option value="Deposito">Cuenta</option>
                   </select>
                 </div>
               </div>

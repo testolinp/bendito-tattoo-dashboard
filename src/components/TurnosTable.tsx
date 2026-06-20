@@ -472,8 +472,7 @@ export default function TurnosTable({
                           >
                             <option value="">Seleccionar</option>
                             <option value="Efectivo">Efectivo</option>
-                            <option value="Deposito">Depósito</option>
-                            <option value="Tarjeta">Tarjeta</option>
+                            <option value="Deposito">Cuenta</option>
                           </select>
                           {editing && <input type="hidden" name="forma_pago" value={editing.forma_pago} />}
                         </div>
@@ -542,8 +541,7 @@ export default function TurnosTable({
                       >
                         <option value="">Seleccionar</option>
                         <option value="Efectivo">Efectivo</option>
-                        <option value="Deposito">Depósito</option>
-                        <option value="Tarjeta">Tarjeta</option>
+                        <option value="Deposito">Cuenta</option>
                       </select>
                     </div>
                     {/* Comisiones */}

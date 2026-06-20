@@ -1,11 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import type { Egreso } from "./egresos-actions";
 
 export type CurrencyBreakdown = {
   efectivo: number;
-  deposito: number;
-  tarjeta: number;
+  cuenta: number;
   total: number;
 };
 
@@ -26,6 +26,12 @@ export type CuentasSummary = {
     usd: CurrencyBreakdown;
     euros: CurrencyBreakdown;
   };
+  totales: {
+    pesos: CurrencyBreakdown;
+    usd: CurrencyBreakdown;
+    euros: CurrencyBreakdown;
+  };
+  egresos: Egreso[];
 };
 
 function addToBreakdown(
@@ -35,8 +41,17 @@ function addToBreakdown(
 ) {
   b.total += amount;
   if (metodo === "Efectivo") b.efectivo += amount;
-  else if (metodo === "Deposito" || metodo === "Depósito") b.deposito += amount;
-  else b.tarjeta += amount;
+  else b.cuenta += amount;
+}
+
+function extractStaffCashOnly(val: unknown): boolean {
+  let item: { cash_only?: boolean } | null = null;
+  if (Array.isArray(val) && val.length > 0) {
+    item = val[0] as { cash_only?: boolean };
+  } else if (val && typeof val === "object") {
+    item = val as { cash_only?: boolean };
+  }
+  return item?.cash_only === true;
 }
 
 export async function getCuentasSummary(start: string, end: string) {
@@ -47,7 +62,10 @@ export async function getCuentasSummary(start: string, end: string) {
       `id, cotizacion, moneda,
        deposito_pesos, deposito_usd, deposito_euros,
        forma_pago, pago_pesos, pago_usd, pago_euros, pago_forma_pago,
-       porcentaje_tatuador, porcentaje_jalador, porcentaje_gerente`
+       porcentaje_tatuador, porcentaje_jalador, porcentaje_gerente,
+       tatuador:staff!tatuador_id(cash_only),
+       jalador:staff!jalador_id(cash_only),
+       gerente:staff!gerente_id(cash_only)`
     )
     .gte("fecha_cita", start)
     .lt("fecha_cita", end);
@@ -55,18 +73,21 @@ export async function getCuentasSummary(start: string, end: string) {
   if (error) throw new Error(error.message);
 
   const ingresos = {
-    pesos: { efectivo: 0, deposito: 0, tarjeta: 0, total: 0 },
-    usd: { efectivo: 0, deposito: 0, tarjeta: 0, total: 0 },
-    euros: { efectivo: 0, deposito: 0, tarjeta: 0, total: 0 },
+    pesos: { efectivo: 0, cuenta: 0, total: 0 },
+    usd: { efectivo: 0, cuenta: 0, total: 0 },
+    euros: { efectivo: 0, cuenta: 0, total: 0 },
   };
 
   let comisionTat = 0;
   let comisionJal = 0;
   let comisionGer = 0;
 
-  const usdShop: CurrencyBreakdown = { efectivo: 0, deposito: 0, tarjeta: 0, total: 0 };
-  const eurosShop: CurrencyBreakdown = { efectivo: 0, deposito: 0, tarjeta: 0, total: 0 };
-  const pesosShop: CurrencyBreakdown = { efectivo: 0, deposito: 0, tarjeta: 0, total: 0 };
+  const usdShop: CurrencyBreakdown = { efectivo: 0, cuenta: 0, total: 0 };
+  const eurosShop: CurrencyBreakdown = { efectivo: 0, cuenta: 0, total: 0 };
+  const pesosShop: CurrencyBreakdown = { efectivo: 0, cuenta: 0, total: 0 };
+
+  let pagosEfectivo = 0;
+  let pagosCuenta = 0;
 
   for (const t of data) {
     const dp = Number(t.deposito_pesos);
@@ -79,7 +100,6 @@ export async function getCuentasSummary(start: string, end: string) {
     const fp = t.forma_pago || "";
     const pfp = t.pago_forma_pago || "";
 
-    // Ingresos: sum deposits and payments by currency + method
     addToBreakdown(ingresos.pesos, fp, dp);
     addToBreakdown(ingresos.usd, fp, du);
     addToBreakdown(ingresos.euros, fp, de);
@@ -87,13 +107,11 @@ export async function getCuentasSummary(start: string, end: string) {
     addToBreakdown(ingresos.usd, pfp, pu);
     addToBreakdown(ingresos.euros, pfp, pe);
 
-    // The shop keeps foreign currency deposits/payments as-is
     addToBreakdown(usdShop, fp, du);
     addToBreakdown(usdShop, pfp, pu);
     addToBreakdown(eurosShop, fp, de);
     addToBreakdown(eurosShop, pfp, pe);
 
-    // Track all peso income into pesosShop (commissions subtracted later)
     addToBreakdown(pesosShop, fp, dp);
     addToBreakdown(pesosShop, pfp, pp);
 
@@ -112,17 +130,56 @@ export async function getCuentasSummary(start: string, end: string) {
     comisionTat += mTat;
     comisionJal += mJal;
     comisionGer += mGer;
+
+    const tatCashOnly = extractStaffCashOnly(t.tatuador);
+    const jalCashOnly = extractStaffCashOnly(t.jalador);
+    const gerCashOnly = extractStaffCashOnly(t.gerente);
+
+    if (mTat > 0) {
+      if (tatCashOnly) pagosEfectivo += mTat;
+      else pagosCuenta += mTat;
+    }
+    if (mJal > 0) {
+      if (jalCashOnly) pagosEfectivo += mJal;
+      else pagosCuenta += mJal;
+    }
+    if (mGer > 0) {
+      if (gerCashOnly) pagosEfectivo += mGer;
+      else pagosCuenta += mGer;
+    }
   }
 
-  // Subtract commissions from the shop's peso breakdown proportionally
-  const totalComisiones = comisionTat + comisionJal + comisionGer;
-  if (totalComisiones > 0 && pesosShop.total > 0) {
-    const ratio = 1 - totalComisiones / pesosShop.total;
-    pesosShop.efectivo = Math.round(pesosShop.efectivo * ratio * 100) / 100;
-    pesosShop.deposito = Math.round(pesosShop.deposito * ratio * 100) / 100;
-    pesosShop.tarjeta = Math.round(pesosShop.tarjeta * ratio * 100) / 100;
+  pesosShop.efectivo = Math.round((pesosShop.efectivo - pagosEfectivo) * 100) / 100;
+  pesosShop.cuenta = Math.round((pesosShop.cuenta - pagosCuenta) * 100) / 100;
+  pesosShop.total = Math.round((pesosShop.total - pagosEfectivo - pagosCuenta) * 100) / 100;
+
+  let egresos: Egreso[] = [];
+  try {
+    const { data: egresosData, error: egresosError } = await supabase
+      .from("egresos")
+      .select("*")
+      .gte("created_at", start)
+      .lt("created_at", end)
+      .order("created_at", { ascending: true });
+
+    if (!egresosError) {
+      egresos = (egresosData || []) as Egreso[];
+    }
+  } catch {
+    // table may not exist yet
   }
-  pesosShop.total = Math.round((pesosShop.total - totalComisiones) * 100) / 100;
+
+  const totalesPesos: CurrencyBreakdown = {
+    efectivo: pesosShop.efectivo,
+    cuenta: pesosShop.cuenta,
+    total: pesosShop.total,
+  };
+
+  for (const eg of egresos) {
+    if (eg.payment_method === "Efectivo") totalesPesos.efectivo -= eg.amount;
+    else totalesPesos.cuenta -= eg.amount;
+    totalesPesos.total -= eg.amount;
+  }
 
   return {
     ingresos,
@@ -137,5 +194,11 @@ export async function getCuentasSummary(start: string, end: string) {
       usd: usdShop,
       euros: eurosShop,
     },
+    totales: {
+      pesos: totalesPesos,
+      usd: usdShop,
+      euros: eurosShop,
+    },
+    egresos,
   };
 }

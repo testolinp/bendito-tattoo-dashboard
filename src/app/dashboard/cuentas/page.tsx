@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   getCuentasSummary,
   type CuentasSummary,
   type CurrencyBreakdown,
 } from "@/lib/cuentas-actions";
+import { createEgreso } from "@/lib/egresos-actions";
 
 type Period = "week" | "month";
 
@@ -52,8 +53,7 @@ function BreakdownRow({ label, data }: { label: string; data: CurrencyBreakdown 
     <tr>
       <td>{label}</td>
       <td className="text-end">${fmt(data.efectivo)}</td>
-      <td className="text-end">${fmt(data.deposito)}</td>
-      <td className="text-end">${fmt(data.tarjeta)}</td>
+      <td className="text-end">${fmt(data.cuenta)}</td>
       <td className="text-end fw-bold">${fmt(data.total)}</td>
     </tr>
   );
@@ -79,6 +79,11 @@ function CuentasContent() {
   const [offset, setOffset] = useState(initialOffset);
   const [summary, setSummary] = useState<CuentasSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showEgresoModal, setShowEgresoModal] = useState(false);
+  const [egresoAmount, setEgresoAmount] = useState("");
+  const [egresoMethod, setEgresoMethod] = useState("Efectivo");
+  const [egresoDescription, setEgresoDescription] = useState("");
+  const egresoModalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -101,6 +106,29 @@ function CuentasContent() {
   useEffect(() => {
     fetchSummary();
   }, [fetchSummary]);
+
+  useEffect(() => {
+    if (showEgresoModal) egresoModalRef.current?.focus();
+  }, [showEgresoModal]);
+
+  const handleCreateEgreso = async () => {
+    const amount = Number(egresoAmount);
+    if (!amount || amount <= 0) return;
+    const formData = new FormData();
+    formData.set("amount", String(amount));
+    formData.set("payment_method", egresoMethod);
+    formData.set("description", egresoDescription);
+    const result = await createEgreso(formData);
+    if (result?.error) {
+      alert("Error al guardar egreso: " + result.error);
+      return;
+    }
+    setShowEgresoModal(false);
+    setEgresoAmount("");
+    setEgresoMethod("Efectivo");
+    setEgresoDescription("");
+    fetchSummary();
+  };
 
   const { label } = getDateRange(period, offset);
 
@@ -146,6 +174,9 @@ function CuentasContent() {
           </button>
         </div>
         <div className="d-flex gap-2 ms-auto">
+          <button className="btn btn-sm btn-dark" onClick={() => setShowEgresoModal(true)}>
+            + Nuevo egreso
+          </button>
           <button className="btn btn-sm btn-outline-secondary" onClick={() => window.print()}>
             Imprimir
           </button>
@@ -169,8 +200,7 @@ function CuentasContent() {
                   <tr>
                     <th>Moneda</th>
                     <th className="text-end">Efectivo</th>
-                    <th className="text-end">Depósito</th>
-                    <th className="text-end">Tarjeta</th>
+                    <th className="text-end">Cuenta</th>
                     <th className="text-end">Total</th>
                   </tr>
                 </thead>
@@ -216,8 +246,105 @@ function CuentasContent() {
             </div>
           </div>
 
+          {/* Egresos modal */}
+          {showEgresoModal && (
+            <div
+              className="modal d-block"
+              tabIndex={-1}
+              style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+              ref={egresoModalRef}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setShowEgresoModal(false);
+              }}
+            >
+              <div className="modal-dialog modal-dialog-centered">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h5 className="modal-title">Nuevo egreso</h5>
+                    <button type="button" className="btn-close" onClick={() => setShowEgresoModal(false)} />
+                  </div>
+                  <div className="modal-body">
+                    <div className="mb-3">
+                      <label className="form-label">Monto</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="form-control"
+                        value={egresoAmount}
+                        onChange={(e) => setEgresoAmount(e.target.value)}
+                        placeholder="0.00"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Método de pago</label>
+                      <select className="form-select" value={egresoMethod} onChange={(e) => setEgresoMethod(e.target.value)}>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Deposito">Cuenta</option>
+                      </select>
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Descripción</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={egresoDescription}
+                        onChange={(e) => setEgresoDescription(e.target.value)}
+                        placeholder="Opcional"
+                      />
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={() => setShowEgresoModal(false)}>
+                      Cancelar
+                    </button>
+                    <button type="button" className="btn btn-dark" onClick={handleCreateEgreso}>
+                      Guardar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Egresos */}
+          <div className="card mb-3">
+            <div className="card-header fw-bold d-flex justify-content-between align-items-center">
+              <span>Egresos</span>
+              {summary.egresos.length > 0 && (
+                <span className="fw-bold">${fmt(summary.egresos.reduce((s, e) => s + e.amount, 0))}</span>
+              )}
+            </div>
+            <div className="table-responsive">
+              <table className="table table-sm mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>Descripción</th>
+                    <th>Método</th>
+                    <th className="text-end">Monto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summary.egresos.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="text-center text-muted py-3">Sin egresos</td>
+                    </tr>
+                  ) : (
+                    summary.egresos.map((eg) => (
+                      <tr key={eg.id}>
+                        <td>{eg.description || "—"}</td>
+                        <td>{eg.payment_method}</td>
+                        <td className="text-end">${fmt(eg.amount)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           {/* Tienda */}
-          <div className="card">
+          <div className="card mb-3">
             <div className="card-header fw-bold">Tienda</div>
             <div className="table-responsive">
               <table className="table table-sm mb-0">
@@ -225,8 +352,7 @@ function CuentasContent() {
                   <tr>
                     <th>Moneda</th>
                     <th className="text-end">Efectivo</th>
-                    <th className="text-end">Depósito</th>
-                    <th className="text-end">Tarjeta</th>
+                    <th className="text-end">Cuenta</th>
                     <th className="text-end">Total</th>
                   </tr>
                 </thead>
@@ -242,13 +368,46 @@ function CuentasContent() {
                       ${fmt(summary.tienda.pesos.efectivo + summary.tienda.usd.efectivo * 16 + summary.tienda.euros.efectivo * 19)}
                     </td>
                     <td className="text-end fw-bold">
-                      ${fmt(summary.tienda.pesos.deposito + summary.tienda.usd.deposito * 16 + summary.tienda.euros.deposito * 19)}
-                    </td>
-                    <td className="text-end fw-bold">
-                      ${fmt(summary.tienda.pesos.tarjeta + summary.tienda.usd.tarjeta * 16 + summary.tienda.euros.tarjeta * 19)}
+                      ${fmt(summary.tienda.pesos.cuenta + summary.tienda.usd.cuenta * 16 + summary.tienda.euros.cuenta * 19)}
                     </td>
                     <td className="text-end fw-bold">
                       ${fmt(summary.tienda.pesos.total + summary.tienda.usd.total * 16 + summary.tienda.euros.total * 19)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          {/* Totales */}
+          <div className="card border-dark">
+            <div className="card-header fw-bold bg-dark text-white">Totales (Tienda - Egresos)</div>
+            <div className="table-responsive">
+              <table className="table table-sm mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>Moneda</th>
+                    <th className="text-end">Efectivo</th>
+                    <th className="text-end">Cuenta</th>
+                    <th className="text-end">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <BreakdownRow label="Pesos" data={summary.totales.pesos} />
+                  <BreakdownRow label="USD" data={summary.totales.usd} />
+                  <BreakdownRow label="Euros" data={summary.totales.euros} />
+                </tbody>
+                <tfoot className="table-dark">
+                  <tr>
+                    <td className="fw-bold">Total final (en pesos)</td>
+                    <td className="text-end fw-bold">
+                      ${fmt(summary.totales.pesos.efectivo + summary.totales.usd.efectivo * 16 + summary.totales.euros.efectivo * 19)}
+                    </td>
+                    <td className="text-end fw-bold">
+                      ${fmt(summary.totales.pesos.cuenta + summary.totales.usd.cuenta * 16 + summary.totales.euros.cuenta * 19)}
+                    </td>
+                    <td className="text-end fw-bold">
+                      ${fmt(summary.totales.pesos.total + summary.totales.usd.total * 16 + summary.totales.euros.total * 19)}
                     </td>
                   </tr>
                 </tfoot>

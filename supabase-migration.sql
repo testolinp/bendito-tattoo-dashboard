@@ -806,3 +806,21 @@ GRANT ALL ON TABLE pagos_realizados TO anon;
 GRANT ALL ON TABLE pagos_realizados TO authenticated;
 GRANT ALL ON TABLE pagos_realizados TO service_role;
 CREATE POLICY "auth_all" ON pagos_realizados FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Table to track business expenses (egresos)
+CREATE TABLE IF NOT EXISTS egresos (
+  id BIGSERIAL PRIMARY KEY,
+  amount NUMERIC(10,2) NOT NULL DEFAULT 0,
+  payment_method TEXT NOT NULL CHECK (payment_method IN ('Efectivo', 'Deposito', 'Tarjeta')),
+  description TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE egresos ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON TABLE egresos TO anon;
+GRANT ALL ON TABLE egresos TO authenticated;
+GRANT ALL ON TABLE egresos TO service_role;
+GRANT USAGE ON SEQUENCE egresos_id_seq TO anon;
+GRANT USAGE ON SEQUENCE egresos_id_seq TO authenticated;
+GRANT USAGE ON SEQUENCE egresos_id_seq TO service_role;
+CREATE POLICY "auth_all" ON egresos FOR ALL TO authenticated USING (true) WITH CHECK (true);

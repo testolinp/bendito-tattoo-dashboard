@@ -308,32 +308,6 @@ function DashboardCardsInner() {
             </div>
           )}
 
-          <div className="card mb-3">
-            <div className="card-header">Tienda</div>
-            <div className="card-body">
-              <div className="row g-3">
-                <div className="col-md-3">
-                  <h6 className="card-title mb-1">Monto en pesos</h6>
-                  <p className="h5 mb-0">${fmt(stats.totalShop)}</p>
-                </div>
-                <div className="col-md-3">
-                  <h6 className="card-title mb-1">Restante de cotización en pesos</h6>
-                  <p className="h5 mb-0">
-                    ${fmt(stats.totalShop + (stats.totalDepUsd + stats.totalPagUsd) * 16 + (stats.totalDepEuros + stats.totalPagEuros) * 19)}
-                  </p>
-                </div>
-                <div className="col-md-3">
-                  <h6 className="card-title mb-1">USD</h6>
-                  <p className="h5 mb-0">${fmt(stats.totalDepUsd + stats.totalPagUsd)}</p>
-                </div>
-                <div className="col-md-3">
-                  <h6 className="card-title mb-1">Euros</h6>
-                  <p className="h5 mb-0">€{fmt(stats.totalDepEuros + stats.totalPagEuros)}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {viewing && (
             <div
               className="modal d-block"

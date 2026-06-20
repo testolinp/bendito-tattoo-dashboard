@@ -443,8 +443,7 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                       <select name="forma_pago" className="form-select" defaultValue={editing?.forma_pago ?? ""}>
                         <option value="">Seleccionar</option>
                         <option value="Efectivo">Efectivo</option>
-                        <option value="Deposito">Depósito</option>
-                        <option value="Tarjeta">Tarjeta</option>
+                        <option value="Deposito">Cuenta</option>
                       </select>
                     </div>
                   </div>

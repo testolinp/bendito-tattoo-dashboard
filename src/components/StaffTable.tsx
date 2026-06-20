@@ -91,7 +91,7 @@ export default function StaffTable({ staff, role, title }: Props) {
                     {member.cash_only ? (
                       <span className="badge bg-success">Solo efectivo</span>
                     ) : (
-                      <span className="badge bg-warning">Tarjeta</span>
+                      <span className="badge bg-warning">Cuenta</span>
                     )}
                   </td>
                   <td>
