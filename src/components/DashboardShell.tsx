@@ -5,24 +5,50 @@ import { usePathname } from "next/navigation";
 import { logout } from "@/app/auth/actions";
 import { useState } from "react";
 
-const navItems = [
-  { label: "Dashboard", href: "/dashboard" },
+const generalNav = [
   { label: "Turnos", href: "/dashboard/turnos" },
   { label: "Citas", href: "/dashboard/citas" },
+];
+
+const staffNav = [
   { label: "Gerentes", href: "/dashboard/gerentes" },
   { label: "Jaladores", href: "/dashboard/jaladores" },
   { label: "Tatuadores", href: "/dashboard/tatuadores" },
+];
+
+const financeNav = [
+  { label: "Dashboard", href: "/dashboard" },
   { label: "Cuentas", href: "/dashboard/cuentas" },
   { label: "Pagos", href: "/dashboard/pagos" },
 ];
 
 type Props = {
   children: React.ReactNode;
-  userEmail: string;
   isAdmin: boolean;
+  sidebarTitle?: string;
+  sidebarDescription?: string;
+  sidebarLogoUrl?: string;
 };
 
-export default function DashboardShell({ children, userEmail, isAdmin }: Props) {
+function SidebarBrand({ title, description, logoUrl }: { title: string; description?: string; logoUrl?: string }) {
+  return (
+    <div className="d-flex align-items-center gap-2">
+      {logoUrl && (
+        <img
+          src={logoUrl}
+          alt={title}
+          style={{ width: 50, height: 50, objectFit: "contain" }}
+        />
+      )}
+      <div>
+        <h5 className="mb-0">{title}</h5>
+        {description && <small className="text-secondary">{description}</small>}
+      </div>
+    </div>
+  );
+}
+
+export default function DashboardShell({ children, isAdmin, sidebarTitle = "Bendito Tattoo", sidebarDescription, sidebarLogoUrl }: Props) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -34,7 +60,12 @@ export default function DashboardShell({ children, userEmail, isAdmin }: Props) 
         }
       `}</style>
       <div className="d-md-none position-fixed top-0 start-0 w-100 bg-dark text-white d-flex align-items-center justify-content-between ps-4 pe-3 py-2" style={{ zIndex: 1050 }}>
-        <h6 className="mb-0">Bendito Tattoo</h6>
+        <div className="d-flex align-items-center gap-2">
+          {sidebarLogoUrl && (
+            <img src={sidebarLogoUrl} alt={sidebarTitle} style={{ height: 32, width: 32, objectFit: "contain" }} />
+          )}
+          <h6 className="mb-0">{sidebarTitle}</h6>
+        </div>
         <button className="btn btn-sm btn-outline-light border-0 fs-4" onClick={() => setSidebarOpen(!sidebarOpen)}>
           ☰
         </button>
@@ -47,12 +78,11 @@ export default function DashboardShell({ children, userEmail, isAdmin }: Props) 
         style={{ width: 250, minHeight: "100vh", position: "fixed", zIndex: 1052 }}
       >
         <div className="p-3 border-bottom border-secondary">
-          <h5 className="mb-0">Bendito Tattoo</h5>
-          <small className="text-secondary">{userEmail || "Dashboard"}</small>
+          <SidebarBrand title={sidebarTitle} description={sidebarDescription} logoUrl={sidebarLogoUrl} />
         </div>
 
         <nav className="flex-grow-1 p-2">
-          {(isAdmin ? navItems : navItems.filter((item) => item.href === "/dashboard/turnos" || item.href === "/dashboard/citas")).map((item) => {
+          {generalNav.map((item) => {
             const active = pathname === item.href;
             return (
               <Link
@@ -70,6 +100,38 @@ export default function DashboardShell({ children, userEmail, isAdmin }: Props) 
           {isAdmin && (
             <>
               <hr className="border-secondary my-2" />
+              {staffNav.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`btn w-100 text-start mb-1 ${
+                      active ? "btn-light text-dark" : "btn-dark text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+              <hr className="border-secondary my-2" />
+              {financeNav.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`btn w-100 text-start mb-1 ${
+                      active ? "btn-light text-dark" : "btn-dark text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+              <hr className="border-secondary my-2" />
               <Link
                 href="/dashboard/users"
                 onClick={() => setSidebarOpen(false)}
@@ -78,6 +140,15 @@ export default function DashboardShell({ children, userEmail, isAdmin }: Props) 
                 }`}
               >
                 Usuarios
+              </Link>
+              <Link
+                href="/dashboard/settings"
+                onClick={() => setSidebarOpen(false)}
+                className={`btn w-100 text-start mb-1 ${
+                  pathname === "/dashboard/settings" ? "btn-light text-dark" : "btn-dark text-white"
+                }`}
+              >
+                Configuración
               </Link>
             </>
           )}

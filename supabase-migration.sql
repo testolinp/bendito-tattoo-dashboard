@@ -824,3 +824,23 @@ GRANT USAGE ON SEQUENCE egresos_id_seq TO anon;
 GRANT USAGE ON SEQUENCE egresos_id_seq TO authenticated;
 GRANT USAGE ON SEQUENCE egresos_id_seq TO service_role;
 CREATE POLICY "auth_all" ON egresos FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Site settings (branding, etc.)
+CREATE TABLE IF NOT EXISTS site_settings (
+  id BIGSERIAL PRIMARY KEY,
+  sidebar_title TEXT NOT NULL DEFAULT 'Bendito Tattoo',
+  sidebar_description TEXT NOT NULL DEFAULT '',
+  sidebar_logo_url TEXT NOT NULL DEFAULT '',
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS sidebar_description TEXT NOT NULL DEFAULT '';
+ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON TABLE site_settings TO anon;
+GRANT ALL ON TABLE site_settings TO authenticated;
+GRANT ALL ON TABLE site_settings TO service_role;
+CREATE POLICY "auth_all" ON site_settings FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Ensure there is always a row with id=1
+INSERT INTO site_settings (id, sidebar_title) VALUES (1, 'Bendito Tattoo')
+ON CONFLICT (id) DO NOTHING;

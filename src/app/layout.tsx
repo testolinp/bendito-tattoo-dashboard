@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { getSettings } from "@/lib/settings-actions";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,10 +13,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Bendito Tattoo - Dashboard",
-  description: "Panel de administración de Bendito Tattoo",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSettings();
+  const icons = settings.sidebar_logo_url
+    ? [{ rel: "icon", url: settings.sidebar_logo_url }]
+    : undefined;
+
+  return {
+    title: "Bendito Tattoo - Dashboard",
+    description: "Panel de administración de Bendito Tattoo",
+    icons,
+    robots: { index: false, follow: false },
+  };
+}
 
 export default function RootLayout({
   children,
