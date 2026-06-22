@@ -813,9 +813,11 @@ CREATE TABLE IF NOT EXISTS egresos (
   amount NUMERIC(10,2) NOT NULL DEFAULT 0,
   payment_method TEXT NOT NULL CHECK (payment_method IN ('Efectivo', 'Deposito', 'Tarjeta')),
   description TEXT NOT NULL DEFAULT '',
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+ALTER TABLE egresos ADD COLUMN IF NOT EXISTS date DATE NOT NULL DEFAULT CURRENT_DATE;
 ALTER TABLE egresos ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON TABLE egresos TO anon;
 GRANT ALL ON TABLE egresos TO authenticated;

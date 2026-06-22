@@ -8,7 +8,7 @@ export type Egreso = {
   amount: number;
   payment_method: string;
   description: string;
-  created_at: string;
+  date: string;
 };
 
 export async function createEgreso(formData: FormData) {
@@ -17,7 +17,24 @@ export async function createEgreso(formData: FormData) {
     amount: Number(formData.get("amount")),
     payment_method: formData.get("payment_method") as string,
     description: (formData.get("description") as string) || "",
+    date: (formData.get("date") as string) || new Date().toISOString().slice(0, 10),
   });
+  if (error) return { error: error.message };
+  revalidatePath("/dashboard/cuentas");
+}
+
+export async function updateEgreso(formData: FormData) {
+  const id = Number(formData.get("id"));
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("egresos")
+    .update({
+      amount: Number(formData.get("amount")),
+      payment_method: formData.get("payment_method") as string,
+      description: (formData.get("description") as string) || "",
+      date: (formData.get("date") as string) || new Date().toISOString().slice(0, 10),
+    })
+    .eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/dashboard/cuentas");
 }

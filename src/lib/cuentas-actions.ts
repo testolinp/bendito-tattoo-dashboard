@@ -158,9 +158,9 @@ export async function getCuentasSummary(start: string, end: string) {
     const { data: egresosData, error: egresosError } = await supabase
       .from("egresos")
       .select("*")
-      .gte("created_at", start)
-      .lt("created_at", end)
-      .order("created_at", { ascending: true });
+      .gte("date", start.slice(0, 10))
+      .lt("date", end.slice(0, 10))
+      .order("date", { ascending: true });
 
     if (!egresosError) {
       egresos = (egresosData || []) as Egreso[];

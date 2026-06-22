@@ -7,7 +7,7 @@ import {
   type CuentasSummary,
   type CurrencyBreakdown,
 } from "@/lib/cuentas-actions";
-import { createEgreso } from "@/lib/egresos-actions";
+import { createEgreso, updateEgreso, type Egreso } from "@/lib/egresos-actions";
 
 type Period = "week" | "month";
 
@@ -83,6 +83,8 @@ function CuentasContent() {
   const [egresoAmount, setEgresoAmount] = useState("");
   const [egresoMethod, setEgresoMethod] = useState("Efectivo");
   const [egresoDescription, setEgresoDescription] = useState("");
+  const [egresoDate, setEgresoDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [editingEgreso, setEditingEgreso] = useState<Egreso | null>(null);
   const egresoModalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -111,6 +113,14 @@ function CuentasContent() {
     if (showEgresoModal) egresoModalRef.current?.focus();
   }, [showEgresoModal]);
 
+  const resetEgresoForm = () => {
+    setEgresoAmount("");
+    setEgresoMethod("Efectivo");
+    setEgresoDescription("");
+    setEgresoDate(new Date().toISOString().slice(0, 10));
+    setEditingEgreso(null);
+  };
+
   const handleCreateEgreso = async () => {
     const amount = Number(egresoAmount);
     if (!amount || amount <= 0) return;
@@ -118,16 +128,49 @@ function CuentasContent() {
     formData.set("amount", String(amount));
     formData.set("payment_method", egresoMethod);
     formData.set("description", egresoDescription);
+    formData.set("date", egresoDate);
     const result = await createEgreso(formData);
     if (result?.error) {
       alert("Error al guardar egreso: " + result.error);
       return;
     }
     setShowEgresoModal(false);
-    setEgresoAmount("");
-    setEgresoMethod("Efectivo");
-    setEgresoDescription("");
+    resetEgresoForm();
     fetchSummary();
+  };
+
+  const handleUpdateEgreso = async () => {
+    if (!editingEgreso) return;
+    const amount = Number(egresoAmount);
+    if (!amount || amount <= 0) return;
+    const formData = new FormData();
+    formData.set("id", String(editingEgreso.id));
+    formData.set("amount", String(amount));
+    formData.set("payment_method", egresoMethod);
+    formData.set("description", egresoDescription);
+    formData.set("date", egresoDate);
+    const result = await updateEgreso(formData);
+    if (result?.error) {
+      alert("Error al actualizar egreso: " + result.error);
+      return;
+    }
+    setShowEgresoModal(false);
+    resetEgresoForm();
+    fetchSummary();
+  };
+
+  const openEditEgreso = (eg: Egreso) => {
+    setEditingEgreso(eg);
+    setEgresoAmount(String(eg.amount));
+    setEgresoMethod(eg.payment_method);
+    setEgresoDescription(eg.description);
+    setEgresoDate(eg.date);
+    setShowEgresoModal(true);
+  };
+
+  const openNewEgreso = () => {
+    resetEgresoForm();
+    setShowEgresoModal(true);
   };
 
   const { label } = getDateRange(period, offset);
@@ -174,7 +217,7 @@ function CuentasContent() {
           </button>
         </div>
         <div className="d-flex gap-2 ms-auto">
-          <button className="btn btn-sm btn-dark" onClick={() => setShowEgresoModal(true)}>
+          <button className="btn btn-sm btn-dark" onClick={openNewEgreso}>
             + Nuevo egreso
           </button>
           <button className="btn btn-sm btn-outline-secondary" onClick={() => window.print()}>
@@ -260,10 +303,19 @@ function CuentasContent() {
               <div className="modal-dialog modal-dialog-centered">
                 <div className="modal-content">
                   <div className="modal-header">
-                    <h5 className="modal-title">Nuevo egreso</h5>
+                    <h5 className="modal-title">{editingEgreso ? "Editar egreso" : "Nuevo egreso"}</h5>
                     <button type="button" className="btn-close" onClick={() => setShowEgresoModal(false)} />
                   </div>
                   <div className="modal-body">
+                    <div className="mb-3">
+                      <label className="form-label">Fecha</label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={egresoDate}
+                        onChange={(e) => setEgresoDate(e.target.value)}
+                      />
+                    </div>
                     <div className="mb-3">
                       <label className="form-label">Monto</label>
                       <input
@@ -298,7 +350,7 @@ function CuentasContent() {
                     <button type="button" className="btn btn-secondary" onClick={() => setShowEgresoModal(false)}>
                       Cancelar
                     </button>
-                    <button type="button" className="btn btn-dark" onClick={handleCreateEgreso}>
+                    <button type="button" className="btn btn-dark" onClick={editingEgreso ? handleUpdateEgreso : handleCreateEgreso}>
                       Guardar
                     </button>
                   </div>
@@ -319,22 +371,30 @@ function CuentasContent() {
               <table className="table table-sm mb-0">
                 <thead className="table-light">
                   <tr>
+                    <th>Fecha</th>
                     <th>Descripción</th>
                     <th>Método</th>
                     <th className="text-end">Monto</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {summary.egresos.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="text-center text-muted py-3">Sin egresos</td>
+                      <td colSpan={5} className="text-center text-muted py-3">Sin egresos</td>
                     </tr>
                   ) : (
                     summary.egresos.map((eg) => (
                       <tr key={eg.id}>
+                        <td>{eg.date ? new Date(eg.date + "T12:00:00").toLocaleDateString("es-MX") : "—"}</td>
                         <td>{eg.description || "—"}</td>
                         <td>{eg.payment_method}</td>
                         <td className="text-end">${fmt(eg.amount)}</td>
+                        <td>
+                          <button className="btn btn-sm btn-outline-secondary py-0 px-1" onClick={() => openEditEgreso(eg)} title="Editar">
+✎
+                          </button>
+                        </td>
                       </tr>
                     ))
                   )}
