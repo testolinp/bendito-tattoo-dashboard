@@ -28,6 +28,11 @@ type Props = {
   sidebarTitle?: string;
   sidebarDescription?: string;
   sidebarLogoUrl?: string;
+  sidebarBaseColor?: string;
+  sidebarTextColor?: string;
+  sidebarBorderColor?: string;
+  sidebarTitleColor?: string;
+  sidebarDescriptionColor?: string;
 };
 
 function SidebarBrand({ title, description, logoUrl }: { title: string; description?: string; logoUrl?: string }) {
@@ -41,19 +46,62 @@ function SidebarBrand({ title, description, logoUrl }: { title: string; descript
         />
       )}
       <div>
-        <h5 className="mb-0">{title}</h5>
-        {description && <small className="text-secondary">{description}</small>}
+        <h5 className="mb-0 sidebar-brand-title">{title}</h5>
+        {description && <small className="text-secondary sidebar-brand-desc">{description}</small>}
       </div>
     </div>
   );
 }
 
-export default function DashboardShell({ children, isAdmin, sidebarTitle = "Bendito Tattoo", sidebarDescription, sidebarLogoUrl }: Props) {
+export default function DashboardShell({ children, isAdmin, sidebarTitle = "Bendito Tattoo", sidebarDescription, sidebarLogoUrl, sidebarBaseColor = "#212529", sidebarTextColor = "#ffffff", sidebarBorderColor = "#495057", sidebarTitleColor = "#ffffff", sidebarDescriptionColor = "#ced4da" }: Props) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="d-flex min-vh-100">
+      <style>{`
+        :root {
+          --sidebar-bg: ${sidebarBaseColor};
+          --sidebar-text: ${sidebarTextColor};
+          --sidebar-border: ${sidebarBorderColor};
+          --sidebar-title-color: ${sidebarTitleColor};
+          --sidebar-desc-color: ${sidebarDescriptionColor};
+        }
+        .bg-dark.text-white {
+          background-color: var(--sidebar-bg) !important;
+          color: var(--sidebar-text) !important;
+        }
+        .bg-dark.text-white .btn-dark {
+          background-color: var(--sidebar-bg) !important;
+          color: var(--sidebar-text) !important;
+          border-color: transparent;
+        }
+        .bg-dark.text-white .btn-dark:hover {
+          background-color: #ffffff !important;
+          color: #000000 !important;
+        }
+        .bg-dark.text-white .btn-outline-light {
+          border-color: var(--sidebar-text) !important;
+          color: var(--sidebar-text) !important;
+        }
+        .bg-dark.text-white .btn-outline-light:hover {
+          background-color: var(--sidebar-text) !important;
+          color: var(--sidebar-bg) !important;
+        }
+        .bg-dark.text-white .text-secondary {
+          color: var(--sidebar-text) !important;
+          opacity: .7;
+        }
+        .bg-dark.text-white .border-secondary {
+          border-color: var(--sidebar-border) !important;
+        }
+        .bg-dark.text-white .sidebar-brand-title {
+          color: var(--sidebar-title-color) !important;
+        }
+        .bg-dark.text-white .sidebar-brand-desc {
+          color: var(--sidebar-desc-color) !important;
+        }
+      `}</style>
       <style>{`
         @media (max-width: 767.98px) {
           .main-content > .p-4 { padding-top: 4.5rem !important; }

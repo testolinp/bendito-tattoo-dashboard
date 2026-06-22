@@ -23,6 +23,11 @@ export default async function DashboardLayout({
       sidebarTitle={settings.sidebar_title}
       sidebarDescription={settings.sidebar_description}
       sidebarLogoUrl={settings.sidebar_logo_url}
+      sidebarBaseColor={settings.sidebar_base_color}
+      sidebarTextColor={settings.sidebar_text_color}
+      sidebarBorderColor={settings.sidebar_border_color}
+      sidebarTitleColor={settings.sidebar_title_color}
+      sidebarDescriptionColor={settings.sidebar_description_color}
     >
       {children}
     </DashboardShell>

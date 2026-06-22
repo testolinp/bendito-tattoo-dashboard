@@ -7,18 +7,23 @@ export type SiteSettings = {
   sidebar_title: string;
   sidebar_description: string;
   sidebar_logo_url: string;
+  sidebar_base_color: string;
+  sidebar_text_color: string;
+  sidebar_border_color: string;
+  sidebar_title_color: string;
+  sidebar_description_color: string;
 };
 
 export async function getSettings(): Promise<SiteSettings> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("site_settings")
-    .select("sidebar_title, sidebar_description, sidebar_logo_url")
+    .select("sidebar_title, sidebar_description, sidebar_logo_url, sidebar_base_color, sidebar_text_color, sidebar_border_color, sidebar_title_color, sidebar_description_color")
     .eq("id", 1)
     .single();
 
   if (error || !data) {
-    return { sidebar_title: "Bendito Tattoo", sidebar_description: "", sidebar_logo_url: "" };
+    return { sidebar_title: "Bendito Tattoo", sidebar_description: "", sidebar_logo_url: "", sidebar_base_color: "#212529", sidebar_text_color: "#ffffff", sidebar_border_color: "#495057", sidebar_title_color: "#ffffff", sidebar_description_color: "#ced4da" };
   }
 
   return data;
@@ -27,6 +32,11 @@ export async function getSettings(): Promise<SiteSettings> {
 export async function saveSettings(formData: FormData) {
   const title = formData.get("sidebar_title") as string;
   const description = formData.get("sidebar_description") as string;
+  const sidebarBaseColor = formData.get("sidebar_base_color") as string;
+  const sidebarTextColor = formData.get("sidebar_text_color") as string;
+  const sidebarBorderColor = formData.get("sidebar_border_color") as string;
+  const sidebarTitleColor = formData.get("sidebar_title_color") as string;
+  const sidebarDescriptionColor = formData.get("sidebar_description_color") as string;
   const logoFile = formData.get("sidebar_logo") as File | null;
 
   const supabase = await createClient();
@@ -70,6 +80,11 @@ export async function saveSettings(formData: FormData) {
   const updateData: Record<string, string> = {};
   if (title) updateData.sidebar_title = title;
   updateData.sidebar_description = description ?? "";
+  updateData.sidebar_base_color = sidebarBaseColor ?? "#212529";
+  updateData.sidebar_text_color = sidebarTextColor ?? "#ffffff";
+  updateData.sidebar_border_color = sidebarBorderColor ?? "#495057";
+  updateData.sidebar_title_color = sidebarTitleColor ?? "#ffffff";
+  updateData.sidebar_description_color = sidebarDescriptionColor ?? "#ced4da";
   if (logoUrl) updateData.sidebar_logo_url = logoUrl;
 
   const { error } = await supabase

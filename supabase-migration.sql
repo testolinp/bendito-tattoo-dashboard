@@ -837,6 +837,11 @@ CREATE TABLE IF NOT EXISTS site_settings (
 );
 
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS sidebar_description TEXT NOT NULL DEFAULT '';
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS sidebar_base_color TEXT NOT NULL DEFAULT '#212529';
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS sidebar_text_color TEXT NOT NULL DEFAULT '#ffffff';
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS sidebar_border_color TEXT NOT NULL DEFAULT '#495057';
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS sidebar_title_color TEXT NOT NULL DEFAULT '#ffffff';
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS sidebar_description_color TEXT NOT NULL DEFAULT '#ced4da';
 ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON TABLE site_settings TO anon;
 GRANT ALL ON TABLE site_settings TO authenticated;
