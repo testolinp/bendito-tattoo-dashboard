@@ -165,24 +165,32 @@ function PagosContent() {
 
   const handleConfirm = async () => {
     if (!confirmingPerson) return;
-    await confirmPayment(
-      confirmingPerson.name,
-      periodStart,
-      confirmingPerson.amount,
-      paymentMethod
-    );
-    const next = new Map(confirmedMap);
-    next.set(confirmingPerson.name, paymentMethod);
-    setConfirmedMap(next);
-    setConfirmingPerson(null);
-    setPaymentMethod("Efectivo");
+    try {
+      await confirmPayment(
+        confirmingPerson.name,
+        periodStart,
+        confirmingPerson.amount,
+        paymentMethod
+      );
+      const next = new Map(confirmedMap);
+      next.set(confirmingPerson.name, paymentMethod);
+      setConfirmedMap(next);
+      setConfirmingPerson(null);
+      setPaymentMethod("Efectivo");
+    } catch (e: unknown) {
+      alert("Error al confirmar pago: " + (e instanceof Error ? e.message : String(e)));
+    }
   };
 
   const handleUndo = async (name: string) => {
-    await undoConfirmPayment(name, periodStart);
-    const next = new Map(confirmedMap);
-    next.delete(name);
-    setConfirmedMap(next);
+    try {
+      await undoConfirmPayment(name, periodStart);
+      const next = new Map(confirmedMap);
+      next.delete(name);
+      setConfirmedMap(next);
+    } catch (e: unknown) {
+      alert("Error al deshacer pago: " + (e instanceof Error ? e.message : String(e)));
+    }
   };
 
   const openConfirm = (name: string, amount: number, cashOnly: boolean) => {
