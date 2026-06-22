@@ -15,14 +15,16 @@ const geistMono = Geist_Mono({
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
-  const icons = settings.sidebar_logo_url
-    ? [{ rel: "icon", url: settings.sidebar_logo_url }]
-    : undefined;
+  const logoUrl = settings.sidebar_logo_url || "/logo.jpeg";
 
   return {
     title: "Bendito Tattoo - Dashboard",
     description: "Panel de administración de Bendito Tattoo",
-    icons,
+    icons: [
+      { rel: "icon", url: logoUrl },
+      { rel: "apple-touch-icon", url: logoUrl },
+    ],
+    manifest: "/manifest",
     robots: { index: false, follow: false },
   };
 }
