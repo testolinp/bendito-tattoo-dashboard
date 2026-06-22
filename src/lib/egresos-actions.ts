@@ -23,6 +23,13 @@ export async function createEgreso(formData: FormData) {
   revalidatePath("/dashboard/cuentas");
 }
 
+export async function deleteEgreso(id: number) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("egresos").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/dashboard/cuentas");
+}
+
 export async function updateEgreso(formData: FormData) {
   const id = Number(formData.get("id"));
   const supabase = await createClient();

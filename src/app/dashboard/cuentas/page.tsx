@@ -7,7 +7,8 @@ import {
   type CuentasSummary,
   type CurrencyBreakdown,
 } from "@/lib/cuentas-actions";
-import { createEgreso, updateEgreso, type Egreso } from "@/lib/egresos-actions";
+import { createEgreso, updateEgreso, deleteEgreso, type Egreso } from "@/lib/egresos-actions";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type Period = "week" | "month";
 
@@ -85,6 +86,7 @@ function CuentasContent() {
   const [egresoDescription, setEgresoDescription] = useState("");
   const [egresoDate, setEgresoDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [editingEgreso, setEditingEgreso] = useState<Egreso | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Egreso | null>(null);
   const egresoModalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -156,6 +158,17 @@ function CuentasContent() {
     }
     setShowEgresoModal(false);
     resetEgresoForm();
+    fetchSummary();
+  };
+
+  const handleDeleteEgreso = async () => {
+    if (!deleteConfirm) return;
+    const result = await deleteEgreso(deleteConfirm.id);
+    if (result?.error) {
+      alert("Error al eliminar egreso: " + result.error);
+      return;
+    }
+    setDeleteConfirm(null);
     fetchSummary();
   };
 
@@ -375,7 +388,7 @@ function CuentasContent() {
                     <th>Descripción</th>
                     <th>Método</th>
                     <th className="text-end">Monto</th>
-                    <th></th>
+                    <th className="text-end">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -390,9 +403,12 @@ function CuentasContent() {
                         <td>{eg.description || "—"}</td>
                         <td>{eg.payment_method}</td>
                         <td className="text-end">${fmt(eg.amount)}</td>
-                        <td>
-                          <button className="btn btn-sm btn-outline-secondary py-0 px-1" onClick={() => openEditEgreso(eg)} title="Editar">
+                        <td className="text-nowrap text-end">
+                          <button className="btn btn-sm btn-outline-secondary py-0 px-1 me-1" onClick={() => openEditEgreso(eg)} title="Editar">
 ✎
+                          </button>
+                          <button className="btn btn-sm btn-outline-danger py-0 px-1" onClick={() => setDeleteConfirm(eg)} title="Eliminar">
+✕
                           </button>
                         </td>
                       </tr>
@@ -402,6 +418,16 @@ function CuentasContent() {
               </table>
             </div>
           </div>
+
+          <ConfirmDialog
+            open={deleteConfirm !== null}
+            title="Eliminar egreso"
+            message={`¿Eliminar egreso de $${fmt(deleteConfirm?.amount ?? 0)}?`}
+            confirmLabel="Eliminar"
+            variant="danger"
+            onConfirm={handleDeleteEgreso}
+            onCancel={() => setDeleteConfirm(null)}
+          />
 
           {/* Tienda */}
           <div className="card mb-3">
