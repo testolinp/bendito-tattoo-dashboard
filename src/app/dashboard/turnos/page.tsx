@@ -1,5 +1,6 @@
 import { getStaff } from "@/lib/staff-actions";
 import { getTurnos } from "@/lib/turnos-actions";
+import { createClient } from "@/lib/supabase/server";
 import TurnosTable from "@/components/TurnosTable";
 
 export default async function TurnosPage({
@@ -7,7 +8,7 @@ export default async function TurnosPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const [[turnos, gerentes, tatuadores, jaladores], params] = await Promise.all([
+  const [[turnos, gerentes, tatuadores, jaladores], params, supabase] = await Promise.all([
     Promise.all([
       getTurnos(),
       getStaff("gerente"),
@@ -15,7 +16,13 @@ export default async function TurnosPage({
       getStaff("jalador"),
     ]),
     searchParams,
+    createClient(),
   ]);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAdmin = user?.email === "admin@benditotattoo.com" || user?.user_metadata?.is_admin === true;
 
   const editTurnoId = params.editTurnoId
     ? Number(params.editTurnoId)
@@ -28,6 +35,7 @@ export default async function TurnosPage({
       tatuadores={tatuadores}
       jaladores={jaladores}
       editTurnoId={editTurnoId}
+      isAdmin={isAdmin}
     />
   );
 }

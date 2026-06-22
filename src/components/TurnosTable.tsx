@@ -13,6 +13,7 @@ type Props = {
   tatuadores: StaffMember[];
   jaladores: StaffMember[];
   editTurnoId?: number | null;
+  isAdmin: boolean;
 };
 const PAGE_SIZE = 10;
 const hasPhone = (t: Turno) => t.telefono.replace(/[^0-9]/g, "").length >= 10;
@@ -85,6 +86,7 @@ export default function TurnosTable({
   tatuadores,
   jaladores,
   editTurnoId,
+  isAdmin,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -916,12 +918,14 @@ export default function TurnosTable({
                     >
                       Ver
                     </button>
-                    <button
-                      className="btn btn-sm btn-outline-secondary me-1"
-                      onClick={() => openEdit(t)}
-                    >
-                      Editar
-                    </button>
+                    {isAdmin && (
+                      <button
+                        className="btn btn-sm btn-outline-secondary me-1"
+                        onClick={() => openEdit(t)}
+                      >
+                        Editar
+                      </button>
+                    )}
                     {hasPhone(t) ? (
                       <a
                         href={waMsgUrl(t)}
