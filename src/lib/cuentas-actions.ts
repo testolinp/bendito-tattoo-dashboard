@@ -98,7 +98,8 @@ export async function getCuentasSummary(start: string, end: string) {
     const { data: confirmed } = await supabase
       .from("pagos_realizados")
       .select("person_name, payment_method")
-      .eq("period_start", start);
+      .gte("period_start", start)
+      .lt("period_start", end);
     if (confirmed) {
       for (const c of confirmed) {
         confirmedPayments.set(c.person_name, c.payment_method);
