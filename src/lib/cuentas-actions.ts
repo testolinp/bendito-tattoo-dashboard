@@ -44,14 +44,18 @@ function addToBreakdown(
   else b.cuenta += amount;
 }
 
-function extractStaffCashOnly(val: unknown): boolean {
-  let item: { cash_only?: boolean } | null = null;
+function extractStaffInfo(val: unknown): { name: string; cashOnly: boolean } | null {
+  let item: { nickname?: string; name?: string; cash_only?: boolean } | null = null;
   if (Array.isArray(val) && val.length > 0) {
-    item = val[0] as { cash_only?: boolean };
+    item = val[0] as { nickname?: string; name?: string; cash_only?: boolean };
   } else if (val && typeof val === "object") {
-    item = val as { cash_only?: boolean };
+    item = val as { nickname?: string; name?: string; cash_only?: boolean };
   }
-  return item?.cash_only === true;
+  if (!item) return null;
+  return {
+    name: item.nickname || item.name || "",
+    cashOnly: item.cash_only === true,
+  };
 }
 
 export async function getCuentasSummary(start: string, end: string) {
@@ -63,9 +67,9 @@ export async function getCuentasSummary(start: string, end: string) {
        deposito_pesos, deposito_usd, deposito_euros,
        forma_pago, pago_pesos, pago_usd, pago_euros, pago_forma_pago,
        porcentaje_tatuador, porcentaje_jalador, porcentaje_gerente,
-       tatuador:staff!tatuador_id(cash_only),
-       jalador:staff!jalador_id(cash_only),
-       gerente:staff!gerente_id(cash_only)`
+       tatuador:staff!tatuador_id(nickname, name, cash_only),
+       jalador:staff!jalador_id(nickname, name, cash_only),
+       gerente:staff!gerente_id(nickname, name, cash_only)`
     )
     .gte("fecha_cita", start)
     .lt("fecha_cita", end);
@@ -88,6 +92,21 @@ export async function getCuentasSummary(start: string, end: string) {
 
   let pagosEfectivo = 0;
   let pagosCuenta = 0;
+
+  const confirmedPayments = new Map<string, string>();
+  try {
+    const { data: confirmed } = await supabase
+      .from("pagos_realizados")
+      .select("person_name, payment_method")
+      .eq("period_start", start);
+    if (confirmed) {
+      for (const c of confirmed) {
+        confirmedPayments.set(c.person_name, c.payment_method);
+      }
+    }
+  } catch {
+    // table may not exist yet
+  }
 
   for (const t of data) {
     const dp = Number(t.deposito_pesos);
@@ -131,20 +150,27 @@ export async function getCuentasSummary(start: string, end: string) {
     comisionJal += mJal;
     comisionGer += mGer;
 
-    const tatCashOnly = extractStaffCashOnly(t.tatuador);
-    const jalCashOnly = extractStaffCashOnly(t.jalador);
-    const gerCashOnly = extractStaffCashOnly(t.gerente);
+    const tatInfo = extractStaffInfo(t.tatuador);
+    const jalInfo = extractStaffInfo(t.jalador);
+    const gerInfo = extractStaffInfo(t.gerente);
+
+    const tatMethod = tatInfo ? confirmedPayments.get(tatInfo.name) : null;
+    const jalMethod = jalInfo ? confirmedPayments.get(jalInfo.name) : null;
+    const gerMethod = gerInfo ? confirmedPayments.get(gerInfo.name) : null;
 
     if (mTat > 0) {
-      if (tatCashOnly) pagosEfectivo += mTat;
+      const method = tatMethod || (tatInfo?.cashOnly ? "Efectivo" : "Deposito");
+      if (method === "Efectivo") pagosEfectivo += mTat;
       else pagosCuenta += mTat;
     }
     if (mJal > 0) {
-      if (jalCashOnly) pagosEfectivo += mJal;
+      const method = jalMethod || (jalInfo?.cashOnly ? "Efectivo" : "Deposito");
+      if (method === "Efectivo") pagosEfectivo += mJal;
       else pagosCuenta += mJal;
     }
     if (mGer > 0) {
-      if (gerCashOnly) pagosEfectivo += mGer;
+      const method = gerMethod || (gerInfo?.cashOnly ? "Efectivo" : "Deposito");
+      if (method === "Efectivo") pagosEfectivo += mGer;
       else pagosCuenta += mGer;
     }
   }
