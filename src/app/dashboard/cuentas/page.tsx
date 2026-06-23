@@ -190,7 +190,17 @@ function CuentasContent() {
 
   return (
     <div>
-      <h2 className="mb-4">Cuentas</h2>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="mb-0">Cuentas</h2>
+        <div className="d-flex gap-2">
+          <button className="btn btn-sm btn-dark" onClick={openNewEgreso}>
+            + Nuevo egreso
+          </button>
+          <button className="btn btn-sm btn-outline-secondary" onClick={() => window.print()}>
+            Imprimir
+          </button>
+        </div>
+      </div>
 
       <div className="d-flex flex-wrap align-items-center gap-2 mb-4">
         <div className="btn-group" role="group">
@@ -227,14 +237,6 @@ function CuentasContent() {
             onClick={() => setOffset((o) => o + 1)}
           >
             ▶
-          </button>
-        </div>
-        <div className="d-flex gap-2 ms-auto">
-          <button className="btn btn-sm btn-dark" onClick={openNewEgreso}>
-            + Nuevo egreso
-          </button>
-          <button className="btn btn-sm btn-outline-secondary" onClick={() => window.print()}>
-            Imprimir
           </button>
         </div>
       </div>

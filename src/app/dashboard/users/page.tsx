@@ -154,8 +154,8 @@ export default function UsersPage() {
               <thead>
                 <tr>
                   <th>Email</th>
-                  <th>Admin</th>
-                  <th>Creado</th>
+                  <th className="d-none d-md-table-cell">Admin</th>
+                  <th className="d-none d-md-table-cell">Creado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -172,7 +172,7 @@ export default function UsersPage() {
                             onChange={(e) => setEditEmail(e.target.value)}
                           />
                         </td>
-                        <td>
+                        <td className="d-none d-md-table-cell">
                           <input
                             type="checkbox"
                             className="form-check-input"
@@ -181,7 +181,7 @@ export default function UsersPage() {
                             onChange={(e) => setEditIsAdmin(e.target.checked)}
                           />
                         </td>
-                        <td>{new Date(u.createdAt).toLocaleDateString()}</td>
+                        <td className="d-none d-md-table-cell">{new Date(u.createdAt).toLocaleDateString()}</td>
                         <td style={{ whiteSpace: "nowrap" }}>
                           <button
                             className="btn btn-sm btn-success me-1"
@@ -200,8 +200,8 @@ export default function UsersPage() {
                     ) : (
                       <>
                         <td>{u.email}</td>
-                        <td>{u.isAdmin ? "Sí" : "No"}</td>
-                        <td>{new Date(u.createdAt).toLocaleDateString()}</td>
+                        <td className="d-none d-md-table-cell">{u.isAdmin ? "Sí" : "No"}</td>
+                        <td className="d-none d-md-table-cell">{new Date(u.createdAt).toLocaleDateString()}</td>
                         <td style={{ whiteSpace: "nowrap" }}>
                           <button
                             className="btn btn-sm btn-outline-secondary me-1"

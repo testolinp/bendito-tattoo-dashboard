@@ -263,7 +263,12 @@ function PagosContent() {
           .table .d-print-table-row { display: table-row !important; }
         }
       `}</style>
-      <h2 className="mb-4">Pagos</h2>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="mb-0">Pagos</h2>
+        <button className="btn btn-sm btn-outline-secondary" onClick={() => window.print()}>
+          Imprimir
+        </button>
+      </div>
 
       <div className="d-flex flex-wrap align-items-center gap-2 mb-4">
         <div className="btn-group" role="group">
@@ -300,11 +305,6 @@ function PagosContent() {
             onClick={() => setOffset((o) => o + 1)}
           >
             ▶
-          </button>
-        </div>
-        <div className="d-flex gap-2 ms-auto">
-          <button className="btn btn-sm btn-outline-secondary" onClick={() => window.print()}>
-            Imprimir
           </button>
         </div>
       </div>

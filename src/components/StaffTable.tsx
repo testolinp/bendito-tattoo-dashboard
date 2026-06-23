@@ -65,10 +65,10 @@ export default function StaffTable({ staff, role, title }: Props) {
           <table className="table table-hover mb-0">
             <thead className="table-light">
               <tr>
-                <th>Nombre</th>
+                <th className="d-none d-md-table-cell">Nombre</th>
                 <th>Apodo</th>
-                <th>Banco</th>
-                <th>Clabe</th>
+                <th className="d-none d-md-table-cell">Banco</th>
+                <th className="d-none d-md-table-cell">Clabe</th>
                 <th>Pago</th>
                 <th style={{ width: 180 }}>Acciones</th>
               </tr>
@@ -83,10 +83,10 @@ export default function StaffTable({ staff, role, title }: Props) {
               )}
               {staff.map((member) => (
                 <tr key={member.id}>
-                  <td>{member.name}</td>
+                  <td className="d-none d-md-table-cell">{member.name}</td>
                   <td>{member.nickname}</td>
-                  <td>{member.bank}</td>
-                  <td>{member.account_number}</td>
+                  <td className="d-none d-md-table-cell">{member.bank}</td>
+                  <td className="d-none d-md-table-cell">{member.account_number}</td>
                   <td>
                     {member.cash_only ? (
                       <span className="badge bg-success">Solo efectivo</span>
