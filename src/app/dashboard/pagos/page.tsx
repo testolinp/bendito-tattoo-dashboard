@@ -142,7 +142,6 @@ function PagosContent() {
   const { start, end, label } = getDateRange(period, offset);
   const startISO = start.toISOString();
   const endISO = end.toISOString();
-  const periodStart = startISO;
 
   useEffect(() => {
     if (confirmingPerson) modalRef.current?.focus();
@@ -152,12 +151,12 @@ function PagosContent() {
     setLoading(true);
     const [summaryData, confirmedPayments] = await Promise.all([
       getPaymentSummary(startISO, endISO),
-      getConfirmedPayments(periodStart),
+      getConfirmedPayments(startISO, endISO),
     ]);
     setSummary(summaryData);
     setConfirmedMap(new Map(confirmedPayments.map((c) => [c.person_name, c.payment_method])));
     setLoading(false);
-  }, [startISO, endISO, periodStart]);
+  }, [startISO, endISO]);
 
   useEffect(() => {
     fetchData();
@@ -168,7 +167,7 @@ function PagosContent() {
     try {
       await confirmPayment(
         confirmingPerson.name,
-        periodStart,
+        startISO,
         confirmingPerson.amount,
         paymentMethod
       );
@@ -184,7 +183,7 @@ function PagosContent() {
 
   const handleUndo = async (name: string) => {
     try {
-      await undoConfirmPayment(name, periodStart);
+      await undoConfirmPayment(name, startISO, endISO);
       const next = new Map(confirmedMap);
       next.delete(name);
       setConfirmedMap(next);

@@ -102,12 +102,13 @@ export async function getPaymentSummary(start: string, end: string) {
   };
 }
 
-export async function getConfirmedPayments(periodStart: string) {
+export async function getConfirmedPayments(start: string, end: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("pagos_realizados")
     .select("person_name, payment_method")
-    .eq("period_start", periodStart);
+    .gte("period_start", start)
+    .lt("period_start", end);
 
   if (error) throw new Error(error.message);
   return data as ConfirmedInfo[];
@@ -135,13 +136,14 @@ export async function confirmPayment(
   if (error) throw new Error(error.message);
 }
 
-export async function undoConfirmPayment(personName: string, periodStart: string) {
+export async function undoConfirmPayment(personName: string, start: string, end: string) {
   const supabase = await createClient();
   const { error } = await supabase
     .from("pagos_realizados")
     .delete()
     .eq("person_name", personName)
-    .eq("period_start", periodStart);
+    .gte("period_start", start)
+    .lt("period_start", end);
 
   if (error) throw new Error(error.message);
 }
