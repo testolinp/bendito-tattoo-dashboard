@@ -553,7 +553,10 @@ GRANT EXECUTE ON FUNCTION update_turno(bigint, text, bigint, bigint, bigint, num
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS telefono TEXT NOT NULL DEFAULT '';
 ALTER TABLE turnos ADD COLUMN IF NOT EXISTS telefono TEXT NOT NULL DEFAULT '';
 
--- Recrear funciones de appointments para incluir telefono
+-- Agregar columna descripcion
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS descripcion TEXT NOT NULL DEFAULT '';
+
+-- Recrear funciones de appointments para incluir telefono y descripcion
 CREATE OR REPLACE FUNCTION get_appointments()
 RETURNS JSON
 LANGUAGE plpgsql SECURITY DEFINER
@@ -569,7 +572,7 @@ BEGIN
         a.jalador_id, COALESCE(NULLIF(j.nickname, ''), j.name) AS jalador_name,
         a.cotizacion, a.moneda,
         a.deposito_pesos, a.deposito_usd, a.deposito_euros,
-        a.forma_pago,
+        a.forma_pago, a.descripcion,
         a.fecha_cita, a.status
       FROM appointments a
       LEFT JOIN staff g ON a.gerente_id = g.id
@@ -584,6 +587,7 @@ $$;
 CREATE OR REPLACE FUNCTION create_appointment(
   p_name text,
   p_telefono text,
+  p_descripcion text,
   p_gerente_id bigint,
   p_tatuador_id bigint,
   p_jalador_id bigint,
@@ -599,8 +603,8 @@ RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 BEGIN
-  INSERT INTO appointments (name, telefono, gerente_id, tatuador_id, jalador_id, cotizacion, moneda, deposito_pesos, deposito_usd, deposito_euros, forma_pago, fecha_cita)
-  VALUES (p_name, p_telefono, p_gerente_id, p_tatuador_id, p_jalador_id, p_cotizacion, p_moneda, p_deposito_pesos, p_deposito_usd, p_deposito_euros, p_forma_pago, p_fecha_cita);
+  INSERT INTO appointments (name, telefono, descripcion, gerente_id, tatuador_id, jalador_id, cotizacion, moneda, deposito_pesos, deposito_usd, deposito_euros, forma_pago, fecha_cita)
+  VALUES (p_name, p_telefono, p_descripcion, p_gerente_id, p_tatuador_id, p_jalador_id, p_cotizacion, p_moneda, p_deposito_pesos, p_deposito_usd, p_deposito_euros, p_forma_pago, p_fecha_cita);
 END;
 $$;
 
@@ -608,6 +612,7 @@ CREATE OR REPLACE FUNCTION update_appointment(
   p_id bigint,
   p_name text,
   p_telefono text,
+  p_descripcion text,
   p_gerente_id bigint,
   p_tatuador_id bigint,
   p_jalador_id bigint,
@@ -626,6 +631,7 @@ BEGIN
   UPDATE appointments
   SET name = p_name,
       telefono = p_telefono,
+      descripcion = p_descripcion,
       gerente_id = p_gerente_id,
       tatuador_id = p_tatuador_id,
       jalador_id = p_jalador_id,
@@ -784,8 +790,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION create_appointment(text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, timestamptz) TO authenticated;
-GRANT EXECUTE ON FUNCTION update_appointment(bigint, text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION create_appointment(text, text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION update_appointment(bigint, text, text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, timestamptz) TO authenticated;
 GRANT EXECUTE ON FUNCTION complete_appointment(bigint) TO authenticated;
 GRANT EXECUTE ON FUNCTION create_turno(text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, timestamptz) TO authenticated;
 GRANT EXECUTE ON FUNCTION update_turno(bigint, text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, text, numeric, numeric, numeric, timestamptz) TO authenticated;

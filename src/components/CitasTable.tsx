@@ -258,6 +258,9 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                       <button className="btn btn-sm btn-outline-info me-1" onClick={() => openView(a)}>
                         Ver
                       </button>
+                      <button className="btn btn-sm btn-outline-secondary me-1" onClick={() => openEdit(a)}>
+                        Editar
+                      </button>
                       {hasPhone(a) ? (
                         <a
                           href={waMsgUrl(a)}
@@ -383,6 +386,10 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                       <label className="form-label">Fecha de la cita</label>
                       <input name="fecha_cita" type="datetime-local" className="form-control" defaultValue={editing ? toDateTimeLocal(editing.fecha_cita) : ""} required />
                     </div>
+                    <div className="col-12">
+                      <label className="form-label">Descripción</label>
+                      <textarea name="descripcion" className="form-control" rows={3} defaultValue={editing?.descripcion ?? ""} />
+                    </div>
                     {/* Cotización */}
                     <div className="col-12">
                       <hr className="my-2" />
@@ -502,6 +509,12 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                     <label className="form-label text-muted small">Fecha de la cita</label>
                     <div className="fw-semibold">{formatDateTime(viewing.fecha_cita)}</div>
                   </div>
+                  {viewing.descripcion && (
+                    <div className="col-12">
+                      <label className="form-label text-muted small">Descripción</label>
+                      <div className="fw-semibold">{viewing.descripcion}</div>
+                    </div>
+                  )}
                   <div className="col-12">
                     <hr className="my-2" />
                     <h6 className="fw-bold mb-2">Cotización</h6>

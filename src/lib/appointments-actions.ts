@@ -19,6 +19,7 @@ export type Appointment = {
   deposito_usd: number;
   deposito_euros: number;
   forma_pago: string;
+  descripcion: string;
   fecha_cita: string;
   status: string;
 };
@@ -37,6 +38,7 @@ export async function createAppointment(formData: FormData) {
   const { error } = await supabase.rpc("create_appointment", {
     p_name: formData.get("name") as string,
     p_telefono: formData.get("telefono") as string,
+    p_descripcion: formData.get("descripcion") as string,
     p_gerente_id: Number(formData.get("gerente_id")),
     p_tatuador_id: Number(formData.get("tatuador_id")),
     p_jalador_id: Number(formData.get("jalador_id")),
@@ -60,6 +62,7 @@ export async function updateAppointment(formData: FormData) {
     p_id: Number(formData.get("id")),
     p_name: formData.get("name") as string,
     p_telefono: formData.get("telefono") as string,
+    p_descripcion: formData.get("descripcion") as string,
     p_gerente_id: Number(formData.get("gerente_id")),
     p_tatuador_id: Number(formData.get("tatuador_id")),
     p_jalador_id: Number(formData.get("jalador_id")),
