@@ -353,6 +353,10 @@ export default function TurnosTable({
                         required
                       />
                     </div>
+                    <div className="col-12">
+                      <label className="form-label">Descripción</label>
+                      <textarea name="descripcion" className="form-control" rows={3} defaultValue={editing?.descripcion ?? ""} />
+                    </div>
                     {/* Cotización */}
                     <div className="col-12">
                       <hr className="my-2" />
@@ -657,6 +661,12 @@ export default function TurnosTable({
                     <label className="form-label text-muted small">Fecha de la cita</label>
                     <div className="fw-semibold">{formatDateTime(viewing.fecha_cita)}</div>
                   </div>
+                  {viewing.descripcion && (
+                    <div className="col-12">
+                      <label className="form-label text-muted small">Descripción</label>
+                      <div className="fw-semibold">{viewing.descripcion}</div>
+                    </div>
+                  )}
                   <div className="col-12">
                     <hr className="my-2" />
                     <h6 className="fw-bold mb-2">Cotización</h6>

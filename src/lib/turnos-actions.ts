@@ -19,6 +19,7 @@ export type Turno = {
   deposito_usd: number;
   deposito_euros: number;
   forma_pago: string;
+  descripcion: string;
   pago_pesos: number;
   pago_usd: number;
   pago_euros: number;
@@ -44,6 +45,7 @@ export async function createTurno(formData: FormData) {
   const { error } = await supabase.rpc("create_turno", {
     p_name: formData.get("name") as string,
     p_telefono: formData.get("telefono") as string,
+    p_descripcion: formData.get("descripcion") as string,
     p_gerente_id: Number(formData.get("gerente_id")),
     p_tatuador_id: Number(formData.get("tatuador_id")),
     p_jalador_id: Number(formData.get("jalador_id")),
@@ -74,6 +76,7 @@ export async function updateTurno(formData: FormData) {
     p_id: Number(formData.get("id")),
     p_name: formData.get("name") as string,
     p_telefono: formData.get("telefono") as string,
+    p_descripcion: formData.get("descripcion") as string,
     p_gerente_id: Number(formData.get("gerente_id")),
     p_tatuador_id: Number(formData.get("tatuador_id")),
     p_jalador_id: Number(formData.get("jalador_id")),
