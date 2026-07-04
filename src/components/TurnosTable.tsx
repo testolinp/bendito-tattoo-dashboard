@@ -124,9 +124,11 @@ export default function TurnosTable({
   const upcomingTurnos = turnos.filter(
     (t) => new Date(t.fecha_cita).toLocaleDateString("en-CA", { timeZone: "America/Cancun" }) >= today,
   );
-  const pastTurnos = turnos.filter(
-    (t) => new Date(t.fecha_cita).toLocaleDateString("en-CA", { timeZone: "America/Cancun" }) < today,
-  );
+  const pastTurnos = turnos
+    .filter(
+      (t) => new Date(t.fecha_cita).toLocaleDateString("en-CA", { timeZone: "America/Cancun" }) < today,
+    )
+    .sort((a, b) => new Date(b.fecha_cita).getTime() - new Date(a.fecha_cita).getTime());
   const pastStart = pastPage * PAGE_SIZE;
   const pastSlice = pastTurnos.slice(pastStart, pastStart + PAGE_SIZE);
   const gerenteLabelById = new Map(
