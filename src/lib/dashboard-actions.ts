@@ -111,7 +111,8 @@ export async function getIncomeStats(start: string, end: string) {
     const pu = Number(t.pago_usd);
     const pe = Number(t.pago_euros);
 
-    totalCotizacion += cot;
+    const rate = t.moneda === "USD" ? 16 : t.moneda === "Euros" ? 19 : 1;
+    totalCotizacion += cot * rate;
     if (t.moneda === "Pesos") totalPesos += cot;
     else if (t.moneda === "USD") totalUsd += cot;
     else if (t.moneda === "Euros") totalEuros += cot;
@@ -122,7 +123,6 @@ export async function getIncomeStats(start: string, end: string) {
     totalPagUsd += pu;
     totalPagEuros += pe;
 
-    const rate = t.moneda === "USD" ? 16 : t.moneda === "Euros" ? 19 : 1;
     const quotePesos = cot * rate;
     totalCotPesos += quotePesos;
 
