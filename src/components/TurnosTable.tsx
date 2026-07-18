@@ -424,9 +424,9 @@ export default function TurnosTable({
                                   placeholder="Pesos"
                                   value={formDepPesos}
                                   onChange={(e) => setFormDepPesos(e.target.value)}
-                                  readOnly={!!editing}
-                                  tabIndex={editing ? -1 : 0}
-                                  style={editing ? { outline: "none", boxShadow: "none" } : undefined}
+                                  readOnly={!!editing && !isAdmin}
+                                  tabIndex={editing && !isAdmin ? -1 : 0}
+                                  style={editing && !isAdmin ? { outline: "none", boxShadow: "none" } : undefined}
                                 />
                               </div>
                             </div>
@@ -442,9 +442,9 @@ export default function TurnosTable({
                                   placeholder="USD"
                                   value={formDepUsd}
                                   onChange={(e) => setFormDepUsd(e.target.value)}
-                                  readOnly={!!editing}
-                                  tabIndex={editing ? -1 : 0}
-                                  style={editing ? { outline: "none", boxShadow: "none" } : undefined}
+                                  readOnly={!!editing && !isAdmin}
+                                  tabIndex={editing && !isAdmin ? -1 : 0}
+                                  style={editing && !isAdmin ? { outline: "none", boxShadow: "none" } : undefined}
                                 />
                               </div>
                             </div>
@@ -460,9 +460,9 @@ export default function TurnosTable({
                                   placeholder="Euros"
                                   value={formDepEur}
                                   onChange={(e) => setFormDepEur(e.target.value)}
-                                  readOnly={!!editing}
-                                  tabIndex={editing ? -1 : 0}
-                                  style={editing ? { outline: "none", boxShadow: "none" } : undefined}
+                                  readOnly={!!editing && !isAdmin}
+                                  tabIndex={editing && !isAdmin ? -1 : 0}
+                                  style={editing && !isAdmin ? { outline: "none", boxShadow: "none" } : undefined}
                                 />
                               </div>
                             </div>
@@ -474,15 +474,15 @@ export default function TurnosTable({
                             name="forma_pago"
                             className="form-select"
                             defaultValue={editing?.forma_pago ?? ""}
-                            disabled={!!editing}
-                            tabIndex={editing ? -1 : 0}
-                            style={editing ? { outline: "none", boxShadow: "none" } : undefined}
+                            disabled={!!editing && !isAdmin}
+                            tabIndex={editing && !isAdmin ? -1 : 0}
+                            style={editing && !isAdmin ? { outline: "none", boxShadow: "none" } : undefined}
                           >
                             <option value="">Seleccionar</option>
                             <option value="Efectivo">Efectivo</option>
                             <option value="Deposito">Cuenta</option>
                           </select>
-                          {editing && <input type="hidden" name="forma_pago" value={editing.forma_pago} />}
+                          {editing && !isAdmin && <input type="hidden" name="forma_pago" value={editing.forma_pago} />}
                         </div>
                       </>
                     )}
