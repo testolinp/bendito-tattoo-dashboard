@@ -10,11 +10,16 @@ import {
 } from "@/lib/appointments-actions";
 import type { Appointment } from "@/lib/appointments-actions";
 import type { StaffMember } from "@/lib/staff-actions";
-import { naiveToISO, formatDateTime, toDateTimeLocal } from "@/lib/datetime-utils";
+import {
+  naiveToISO,
+  formatDateTime,
+  toDateTimeLocal,
+} from "@/lib/datetime-utils";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
 const PAGE_SIZE = 10;
-const hasPhone = (a: Appointment) => a.telefono.replace(/[^0-9]/g, "").length >= 10;
+const hasPhone = (a: Appointment) =>
+  a.telefono.replace(/[^0-9]/g, "").length >= 10;
 
 const waMsgUrl = (a: Appointment) => {
   const rate = a.moneda === "USD" ? 16 : a.moneda === "Euros" ? 19 : 1;
@@ -22,13 +27,40 @@ const waMsgUrl = (a: Appointment) => {
   const paid = a.deposito_pesos + a.deposito_usd * 16 + a.deposito_euros * 19;
   const remaining = Math.max(0, totalPesos - paid);
   const date = new Date(a.fecha_cita);
-  const dateStr = date.toLocaleDateString("es-MX", { timeZone: "America/Cancun", day: "2-digit", month: "2-digit", year: "numeric" });
-  const timeStr = date.toLocaleTimeString("es-MX", { timeZone: "America/Cancun", hour: "2-digit", minute: "2-digit", hour12: false });
-  const dateEn = date.toLocaleDateString("en-US", { timeZone: "America/Cancun", day: "2-digit", month: "2-digit", year: "numeric" });
-  const timeEn = date.toLocaleTimeString("en-US", { timeZone: "America/Cancun", hour: "2-digit", minute: "2-digit", hour12: false });
-  const sym = a.moneda === "Pesos" ? "$" : a.moneda === "USD" ? "USD $" : "\u20AC";
-  const pagoEs = remaining <= 0 ? "YA EST\u00C1 TOTALMENTE PAGO" : `LE QUEDA PAGAR $${remaining.toFixed(2)}`;
-  const pagoEn = remaining <= 0 ? "IT IS FULLY PAID" : `YOU HAVE $${remaining.toFixed(2)} LEFT TO PAY`;
+  const dateStr = date.toLocaleDateString("es-MX", {
+    timeZone: "America/Cancun",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const timeStr = date.toLocaleTimeString("es-MX", {
+    timeZone: "America/Cancun",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const dateEn = date.toLocaleDateString("en-US", {
+    timeZone: "America/Cancun",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const timeEn = date.toLocaleTimeString("en-US", {
+    timeZone: "America/Cancun",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const sym =
+    a.moneda === "Pesos" ? "$" : a.moneda === "USD" ? "USD $" : "\u20AC";
+  const pagoEs =
+    remaining <= 0
+      ? "YA EST\u00C1 TOTALMENTE PAGO"
+      : `LE QUEDA PAGAR $${remaining.toFixed(2)}`;
+  const pagoEn =
+    remaining <= 0
+      ? "IT IS FULLY PAID"
+      : `YOU HAVE $${remaining.toFixed(2)} LEFT TO PAY`;
   const msg = `\u00A1Hola! Te confirmamos tu turno en Bendito Tattoo.\n\n\u2022 Fecha y Hora: ${dateStr} a las ${timeStr} hs.\n\u2022 Costo total: ${sym}${a.cotizacion.toFixed(2)}\n\u2022 Estado del pago: ${pagoEs}\n\u2022 Direcci\u00F3n: https://maps.app.goo.gl/vW3qK7jbywo6gUBu5\n\n\u00A1Te esperamos! Record\u00E1 venir con ropa c\u00F3moda y bien alimentado.\n\n---\n\nHello! We confirm your appointment at Bendito Tattoo.\n\n\u2022 Date and Time: ${dateEn} at ${timeEn}\n\u2022 Total Cost: ${sym}${a.cotizacion.toFixed(2)}\n\u2022 Payment Status: ${pagoEn}\n\u2022 Address: https://maps.app.goo.gl/vW3qK7jbywo6gUBu5\n\nWe look forward to seeing you! Remember to come in comfortable clothes and well-fed.`;
   return `https://wa.me/${a.telefono.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(msg)}`;
 };
@@ -52,23 +84,52 @@ const statusColors: Record<string, string> = {
   cancelada: "bg-danger",
 };
 
-function Pagination({ page, total, onChange }: { page: number; total: number; onChange: (p: number) => void }) {
+function Pagination({
+  page,
+  total,
+  onChange,
+}: {
+  page: number;
+  total: number;
+  onChange: (p: number) => void;
+}) {
   const totalPages = Math.ceil(total / PAGE_SIZE);
   if (totalPages <= 1) return null;
   return (
     <div className="d-flex justify-content-center gap-1 py-2">
-      <button className="btn btn-sm btn-outline-secondary" disabled={page <= 0} onClick={() => onChange(page - 1)}>◀</button>
+      <button
+        className="btn btn-sm btn-outline-secondary"
+        disabled={page <= 0}
+        onClick={() => onChange(page - 1)}
+      >
+        ◀
+      </button>
       {Array.from({ length: totalPages }, (_, i) => (
-        <button key={i} className={`btn btn-sm ${i === page ? "btn-dark" : "btn-outline-secondary"}`} onClick={() => onChange(i)}>
+        <button
+          key={i}
+          className={`btn btn-sm ${i === page ? "btn-dark" : "btn-outline-secondary"}`}
+          onClick={() => onChange(i)}
+        >
           {i + 1}
         </button>
       ))}
-      <button className="btn btn-sm btn-outline-secondary" disabled={page >= totalPages - 1} onClick={() => onChange(page + 1)}>▶</button>
+      <button
+        className="btn btn-sm btn-outline-secondary"
+        disabled={page >= totalPages - 1}
+        onClick={() => onChange(page + 1)}
+      >
+        ▶
+      </button>
     </div>
   );
 }
 
-export default function CitasTable({ appointments, gerentes, tatuadores, jaladores }: Props) {
+export default function CitasTable({
+  appointments,
+  gerentes,
+  tatuadores,
+  jaladores,
+}: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
   const [viewing, setViewing] = useState<Appointment | null>(null);
@@ -76,7 +137,9 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
   const [pendingPage, setPendingPage] = useState(0);
   const [historyPage, setHistoryPage] = useState(0);
   const [pendingCancelId, setPendingCancelId] = useState<number | null>(null);
-  const [pendingCompleteId, setPendingCompleteId] = useState<number | null>(null);
+  const [pendingCompleteId, setPendingCompleteId] = useState<number | null>(
+    null,
+  );
 
   const [formCotizacion, setFormCotizacion] = useState("");
   const [formMoneda, setFormMoneda] = useState("Pesos");
@@ -96,7 +159,9 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
   }, [viewing]);
 
   const pending = appointments.filter((a) => a.status === "pendiente");
-  const history = appointments.filter((a) => a.status === "concretada" || a.status === "cancelada");
+  const history = appointments.filter(
+    (a) => a.status === "concretada" || a.status === "cancelada",
+  );
   const gerenteLabelById = new Map(
     gerentes.map((g) => [g.id, (g.nickname && g.nickname.trim()) || g.name]),
   );
@@ -146,11 +211,13 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
     const fechaCita = formData.get("fecha_cita") as string;
     if (fechaCita) formData.set("fecha_cita", naiveToISO(fechaCita));
 
-    const codigoPais = formData.get("codigo_pais") as string || "+52";
-    const telefono = formData.get("telefono") as string || "";
+    const codigoPais = (formData.get("codigo_pais") as string) || "+52";
+    const telefono = (formData.get("telefono") as string) || "";
     formData.set("telefono", `${codigoPais} ${telefono}`);
 
-    const action = editing ? updateAppointment(formData) : createAppointment(formData);
+    const action = editing
+      ? updateAppointment(formData)
+      : createAppointment(formData);
     const result = await action;
 
     setSubmitting(false);
@@ -174,7 +241,13 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
 
   // formatDateTime and toDateTimeLocal now imported from datetime-utils
 
-  function renderTable(title: string, list: Appointment[], page: number, setPage: (p: number) => void, showActions: boolean) {
+  function renderTable(
+    title: string,
+    list: Appointment[],
+    page: number,
+    setPage: (p: number) => void,
+    showActions: boolean,
+  ) {
     const start = page * PAGE_SIZE;
     const slice = list.slice(start, start + PAGE_SIZE);
 
@@ -209,22 +282,39 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
               {slice.map((a) => (
                 <tr key={a.id}>
                   <td>{a.name}</td>
-                  <td className="d-none d-md-table-cell">{gerenteLabelById.get(a.gerente_id) ?? a.gerente_name}</td>
-                  <td className="d-none d-md-table-cell">{tatuadorLabelById.get(a.tatuador_id) ?? a.tatuador_name}</td>
-                  <td className="d-none d-md-table-cell">{jaladorLabelById.get(a.jalador_id) ?? a.jalador_name}</td>
-                  <td className="d-none d-md-table-cell">{Number(a.cotizacion).toFixed(2)} {a.moneda === "Pesos" ? "$" : a.moneda}</td>
+                  <td className="d-none d-md-table-cell">
+                    {gerenteLabelById.get(a.gerente_id) ?? a.gerente_name}
+                  </td>
+                  <td className="d-none d-md-table-cell">
+                    {tatuadorLabelById.get(a.tatuador_id) ?? a.tatuador_name}
+                  </td>
+                  <td className="d-none d-md-table-cell">
+                    {jaladorLabelById.get(a.jalador_id) ?? a.jalador_name}
+                  </td>
+                  <td className="d-none d-md-table-cell">
+                    {Number(a.cotizacion).toFixed(2)}{" "}
+                    {a.moneda === "Pesos" ? "$" : a.moneda}
+                  </td>
                   <td>{formatDateTime(a.fecha_cita)}</td>
                   <td className="d-none d-md-table-cell">
-                    <span className={`badge ${statusColors[a.status] || "bg-secondary"}`}>
+                    <span
+                      className={`badge ${statusColors[a.status] || "bg-secondary"}`}
+                    >
                       {statusLabels[a.status] || a.status}
                     </span>
                   </td>
                   {showActions && (
                     <td style={{ whiteSpace: "nowrap" }}>
-                      <button className="btn btn-sm btn-outline-info me-1" onClick={() => openView(a)}>
+                      <button
+                        className="btn btn-sm btn-outline-info me-1"
+                        onClick={() => openView(a)}
+                      >
                         Ver
                       </button>
-                      <button className="btn btn-sm btn-outline-secondary me-1" onClick={() => openEdit(a)}>
+                      <button
+                        className="btn btn-sm btn-outline-secondary me-1"
+                        onClick={() => openEdit(a)}
+                      >
                         Editar
                       </button>
                       {hasPhone(a) ? (
@@ -243,10 +333,16 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                       )}
                       {a.status === "pendiente" && (
                         <>
-                          <button className="btn btn-sm btn-outline-success me-1" onClick={() => handleComplete(a.id)}>
+                          <button
+                            className="btn btn-sm btn-outline-success me-1"
+                            onClick={() => handleComplete(a.id)}
+                          >
                             Concretar
                           </button>
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleCancel(a.id)}>
+                          <button
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => handleCancel(a.id)}
+                          >
                             Cancelar
                           </button>
                         </>
@@ -255,10 +351,16 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                   )}
                   {!showActions && (
                     <td style={{ whiteSpace: "nowrap" }}>
-                      <button className="btn btn-sm btn-outline-info me-1" onClick={() => openView(a)}>
+                      <button
+                        className="btn btn-sm btn-outline-info me-1"
+                        onClick={() => openView(a)}
+                      >
                         Ver
                       </button>
-                      <button className="btn btn-sm btn-outline-secondary me-1" onClick={() => openEdit(a)}>
+                      <button
+                        className="btn btn-sm btn-outline-secondary me-1"
+                        onClick={() => openEdit(a)}
+                      >
                         Editar
                       </button>
                       {hasPhone(a) ? (
@@ -330,65 +432,147 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
       </div>
 
       {modalOpen && (
-        <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }} ref={editModalRef} onKeyDown={(e) => { if (e.key === "Escape") setModalOpen(false); }}>
+        <div
+          className="modal d-block"
+          tabIndex={-1}
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          ref={editModalRef}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setModalOpen(false);
+          }}
+        >
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">{editing ? "Editar cita" : "Nueva cita"}</h5>
-                <button type="button" className="btn-close" onClick={() => setModalOpen(false)} />
+                <h5 className="modal-title">
+                  {editing ? "Editar cita" : "Nueva cita"}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setModalOpen(false)}
+                />
               </div>
               <form onSubmit={handleSubmit}>
                 <div className="modal-body">
-                  {editing && <input type="hidden" name="id" value={editing.id} />}
+                  {editing && (
+                    <input type="hidden" name="id" value={editing.id} />
+                  )}
                   <div className="row g-3">
                     <div className="col-md-6">
                       <label className="form-label">Nombre</label>
-                      <input name="name" type="text" className="form-control" defaultValue={editing?.name ?? ""} required />
+                      <input
+                        name="name"
+                        type="text"
+                        className="form-control"
+                        defaultValue={editing?.name ?? ""}
+                        required
+                      />
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Teléfono</label>
                       <div className="input-group">
-                        <select name="codigo_pais" className="form-select" style={{ maxWidth: 110 }} defaultValue={editing?.telefono ? (editing.telefono.split(" ")[0] ?? "+52") : "+52"}>
+                        <select
+                          name="codigo_pais"
+                          className="form-select"
+                          style={{ maxWidth: 110 }}
+                          defaultValue={
+                            editing?.telefono
+                              ? (editing.telefono.split(" ")[0] ?? "+52")
+                              : "+52"
+                          }
+                        >
                           <option value="+52">🇲🇽 +52</option>
                           <option value="+1">🇺🇸 +1</option>
                           <option value="+34">🇪🇸 +34</option>
+                          <option value="+39">🇮🇹 +39</option>
                           <option value="+54">🇦🇷 +54</option>
                           <option value="+57">🇨🇴 +57</option>
                           <option value="+56">🇨🇱 +56</option>
                           <option value="+51">🇵🇪 +51</option>
                           <option value="+598">🇺🇾 +598</option>
                         </select>
-                        <input name="telefono" type="tel" className="form-control" placeholder="5551234567" defaultValue={editing?.telefono ? editing.telefono.split(" ").slice(1).join(" ") : ""} />
+                        <input
+                          name="telefono"
+                          type="tel"
+                          className="form-control"
+                          placeholder="5551234567"
+                          defaultValue={
+                            editing?.telefono
+                              ? editing.telefono.split(" ").slice(1).join(" ")
+                              : ""
+                          }
+                        />
                       </div>
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Gerente</label>
-                      <select name="gerente_id" className="form-select" defaultValue={editing?.gerente_id ?? ""} required>
+                      <select
+                        name="gerente_id"
+                        className="form-select"
+                        defaultValue={editing?.gerente_id ?? ""}
+                        required
+                      >
                         <option value="">Seleccionar</option>
-                        {gerentes.map((g) => (<option key={g.id} value={g.id}>{(g.nickname && g.nickname.trim()) || g.name}</option>))}
+                        {gerentes.map((g) => (
+                          <option key={g.id} value={g.id}>
+                            {(g.nickname && g.nickname.trim()) || g.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Tatuador</label>
-                      <select name="tatuador_id" className="form-select" defaultValue={editing?.tatuador_id ?? ""} required>
+                      <select
+                        name="tatuador_id"
+                        className="form-select"
+                        defaultValue={editing?.tatuador_id ?? ""}
+                        required
+                      >
                         <option value="">Seleccionar</option>
-                        {tatuadores.map((t) => (<option key={t.id} value={t.id}>{(t.nickname && t.nickname.trim()) || t.name}</option>))}
+                        {tatuadores.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {(t.nickname && t.nickname.trim()) || t.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Jalador</label>
-                      <select name="jalador_id" className="form-select" defaultValue={editing?.jalador_id ?? ""} required>
+                      <select
+                        name="jalador_id"
+                        className="form-select"
+                        defaultValue={editing?.jalador_id ?? ""}
+                        required
+                      >
                         <option value="">Seleccionar</option>
-                        {jaladores.map((j) => (<option key={j.id} value={j.id}>{(j.nickname && j.nickname.trim()) || j.name}</option>))}
+                        {jaladores.map((j) => (
+                          <option key={j.id} value={j.id}>
+                            {(j.nickname && j.nickname.trim()) || j.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Fecha de la cita</label>
-                      <input name="fecha_cita" type="datetime-local" className="form-control" defaultValue={editing ? toDateTimeLocal(editing.fecha_cita) : ""} required />
+                      <input
+                        name="fecha_cita"
+                        type="datetime-local"
+                        className="form-control"
+                        defaultValue={
+                          editing ? toDateTimeLocal(editing.fecha_cita) : ""
+                        }
+                        required
+                      />
                     </div>
                     <div className="col-12">
                       <label className="form-label">Descripción</label>
-                      <textarea name="descripcion" className="form-control" rows={3} defaultValue={editing?.descripcion ?? ""} />
+                      <textarea
+                        name="descripcion"
+                        className="form-control"
+                        rows={3}
+                        defaultValue={editing?.descripcion ?? ""}
+                      />
                     </div>
                     {/* Cotización */}
                     <div className="col-12">
@@ -398,8 +582,24 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                     <div className="col-md-6">
                       <label className="form-label">Cotización</label>
                       <div className="input-group">
-                        <input name="cotizacion" type="number" step="0.01" min="0" className="form-control" value={formCotizacion} onChange={(e) => setFormCotizacion(e.target.value)} required />
-                        <select name="moneda" className="form-select" style={{ maxWidth: 110 }} value={formMoneda} onChange={(e) => setFormMoneda(e.target.value)} required>
+                        <input
+                          name="cotizacion"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          className="form-control"
+                          value={formCotizacion}
+                          onChange={(e) => setFormCotizacion(e.target.value)}
+                          required
+                        />
+                        <select
+                          name="moneda"
+                          className="form-select"
+                          style={{ maxWidth: 110 }}
+                          value={formMoneda}
+                          onChange={(e) => setFormMoneda(e.target.value)}
+                          required
+                        >
                           <option value="Pesos">Pesos</option>
                           <option value="USD">USD</option>
                           <option value="Euros">Euros</option>
@@ -410,9 +610,17 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                       <div className="fw-semibold fs-4">
                         {(() => {
                           const q = Number(formCotizacion || 0);
-                          const r = formMoneda === "USD" ? 16 : formMoneda === "Euros" ? 19 : 1;
+                          const r =
+                            formMoneda === "USD"
+                              ? 16
+                              : formMoneda === "Euros"
+                                ? 19
+                                : 1;
                           const qPesos = q * r;
-                          const p = Number(formDepPesos || 0) + Number(formDepUsd || 0) * 16 + Number(formDepEur || 0) * 19;
+                          const p =
+                            Number(formDepPesos || 0) +
+                            Number(formDepUsd || 0) * 16 +
+                            Number(formDepEur || 0) * 19;
                           const rem = Math.max(0, qPesos - p);
                           return `Falta pagar: $${rem.toFixed(2)}`;
                         })()}
@@ -428,26 +636,57 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                         <div className="col-md-4">
                           <div className="input-group">
                             <span className="input-group-text">$</span>
-                            <input name="deposito_pesos" type="number" step="0.01" min="0" className="form-control" placeholder="Pesos" value={formDepPesos} onChange={(e) => setFormDepPesos(e.target.value)} />
+                            <input
+                              name="deposito_pesos"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              className="form-control"
+                              placeholder="Pesos"
+                              value={formDepPesos}
+                              onChange={(e) => setFormDepPesos(e.target.value)}
+                            />
                           </div>
                         </div>
                         <div className="col-md-4">
                           <div className="input-group">
                             <span className="input-group-text">USD</span>
-                            <input name="deposito_usd" type="number" step="0.01" min="0" className="form-control" placeholder="USD" value={formDepUsd} onChange={(e) => setFormDepUsd(e.target.value)} />
+                            <input
+                              name="deposito_usd"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              className="form-control"
+                              placeholder="USD"
+                              value={formDepUsd}
+                              onChange={(e) => setFormDepUsd(e.target.value)}
+                            />
                           </div>
                         </div>
                         <div className="col-md-4">
                           <div className="input-group">
                             <span className="input-group-text">€</span>
-                            <input name="deposito_euros" type="number" step="0.01" min="0" className="form-control" placeholder="Euros" value={formDepEur} onChange={(e) => setFormDepEur(e.target.value)} />
+                            <input
+                              name="deposito_euros"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              className="form-control"
+                              placeholder="Euros"
+                              value={formDepEur}
+                              onChange={(e) => setFormDepEur(e.target.value)}
+                            />
                           </div>
                         </div>
                       </div>
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Forma de pago</label>
-                      <select name="forma_pago" className="form-select" defaultValue={editing?.forma_pago ?? ""}>
+                      <select
+                        name="forma_pago"
+                        className="form-select"
+                        defaultValue={editing?.forma_pago ?? ""}
+                      >
                         <option value="">Seleccionar</option>
                         <option value="Efectivo">Efectivo</option>
                         <option value="Deposito">Cuenta</option>
@@ -456,9 +695,23 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                   </div>
                 </div>
                 <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancelar</button>
-                  <button type="submit" className="btn btn-dark" disabled={submitting}>
-                    {submitting ? "Guardando..." : editing ? "Guardar cambios" : "Guardar"}
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setModalOpen(false)}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-dark"
+                    disabled={submitting}
+                  >
+                    {submitting
+                      ? "Guardando..."
+                      : editing
+                        ? "Guardar cambios"
+                        : "Guardar"}
                   </button>
                 </div>
               </form>
@@ -468,50 +721,91 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
       )}
 
       {viewing && (
-        <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }} ref={viewModalRef} onKeyDown={(e) => { if (e.key === "Escape") closeView(); }}>
+        <div
+          className="modal d-block"
+          tabIndex={-1}
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          ref={viewModalRef}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") closeView();
+          }}
+        >
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Cita</h5>
-                <button type="button" className="btn-close" onClick={closeView} />
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={closeView}
+                />
               </div>
               <div className="modal-body">
                 <div className="row g-3">
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Nombre</label>
+                    <label className="form-label text-muted small">
+                      Nombre
+                    </label>
                     <div className="fw-semibold">{viewing.name}</div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Teléfono</label>
+                    <label className="form-label text-muted small">
+                      Teléfono
+                    </label>
                     <div className="fw-semibold">{viewing.telefono || "-"}</div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Estado</label>
+                    <label className="form-label text-muted small">
+                      Estado
+                    </label>
                     <div className="fw-semibold">
-                      <span className={`badge ${statusColors[viewing.status] || "bg-secondary"}`}>
+                      <span
+                        className={`badge ${statusColors[viewing.status] || "bg-secondary"}`}
+                      >
                         {statusLabels[viewing.status] || viewing.status}
                       </span>
                     </div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Gerente</label>
-                    <div className="fw-semibold">{gerenteLabelById.get(viewing.gerente_id) ?? viewing.gerente_name}</div>
+                    <label className="form-label text-muted small">
+                      Gerente
+                    </label>
+                    <div className="fw-semibold">
+                      {gerenteLabelById.get(viewing.gerente_id) ??
+                        viewing.gerente_name}
+                    </div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Tatuador</label>
-                    <div className="fw-semibold">{tatuadorLabelById.get(viewing.tatuador_id) ?? viewing.tatuador_name}</div>
+                    <label className="form-label text-muted small">
+                      Tatuador
+                    </label>
+                    <div className="fw-semibold">
+                      {tatuadorLabelById.get(viewing.tatuador_id) ??
+                        viewing.tatuador_name}
+                    </div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Jalador</label>
-                    <div className="fw-semibold">{jaladorLabelById.get(viewing.jalador_id) ?? viewing.jalador_name}</div>
+                    <label className="form-label text-muted small">
+                      Jalador
+                    </label>
+                    <div className="fw-semibold">
+                      {jaladorLabelById.get(viewing.jalador_id) ??
+                        viewing.jalador_name}
+                    </div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Fecha de la cita</label>
-                    <div className="fw-semibold">{formatDateTime(viewing.fecha_cita)}</div>
+                    <label className="form-label text-muted small">
+                      Fecha de la cita
+                    </label>
+                    <div className="fw-semibold">
+                      {formatDateTime(viewing.fecha_cita)}
+                    </div>
                   </div>
                   {viewing.descripcion && (
                     <div className="col-12">
-                      <label className="form-label text-muted small">Descripción</label>
+                      <label className="form-label text-muted small">
+                        Descripción
+                      </label>
                       <div className="fw-semibold">{viewing.descripcion}</div>
                     </div>
                   )}
@@ -520,7 +814,9 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                     <h6 className="fw-bold mb-2">Cotización</h6>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Cotización</label>
+                    <label className="form-label text-muted small">
+                      Cotización
+                    </label>
                     <div className="fw-semibold">
                       {Number(viewing.cotizacion).toFixed(2)}{" "}
                       {viewing.moneda === "Pesos" ? "$" : viewing.moneda}
@@ -528,9 +824,17 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                     <div className="mt-1 fw-semibold fs-4">
                       {(() => {
                         const q = Number(viewing.cotizacion);
-                        const r = viewing.moneda === "USD" ? 16 : viewing.moneda === "Euros" ? 19 : 1;
+                        const r =
+                          viewing.moneda === "USD"
+                            ? 16
+                            : viewing.moneda === "Euros"
+                              ? 19
+                              : 1;
                         const qPesos = q * r;
-                        const p = Number(viewing.deposito_pesos || 0) + Number(viewing.deposito_usd || 0) * 16 + Number(viewing.deposito_euros || 0) * 19;
+                        const p =
+                          Number(viewing.deposito_pesos || 0) +
+                          Number(viewing.deposito_usd || 0) * 16 +
+                          Number(viewing.deposito_euros || 0) * 19;
                         const rem = Math.max(0, qPesos - p);
                         return `Falta pagar: $${rem.toFixed(2)}`;
                       })()}
@@ -546,34 +850,50 @@ export default function CitasTable({ appointments, gerentes, tatuadores, jalador
                   )}
                   {Number(viewing.deposito_pesos || 0) > 0 && (
                     <div className="col-md-3">
-                      <label className="form-label text-muted small">Pesos</label>
-                      <div className="fw-semibold">${Number(viewing.deposito_pesos).toFixed(2)}</div>
+                      <label className="form-label text-muted small">
+                        Pesos
+                      </label>
+                      <div className="fw-semibold">
+                        ${Number(viewing.deposito_pesos).toFixed(2)}
+                      </div>
                     </div>
                   )}
                   {Number(viewing.deposito_usd || 0) > 0 && (
                     <div className="col-md-3">
                       <label className="form-label text-muted small">USD</label>
-                      <div className="fw-semibold">${Number(viewing.deposito_usd).toFixed(2)}</div>
+                      <div className="fw-semibold">
+                        ${Number(viewing.deposito_usd).toFixed(2)}
+                      </div>
                     </div>
                   )}
                   {Number(viewing.deposito_euros || 0) > 0 && (
                     <div className="col-md-3">
-                      <label className="form-label text-muted small">Euros</label>
-                      <div className="fw-semibold">${Number(viewing.deposito_euros).toFixed(2)}</div>
+                      <label className="form-label text-muted small">
+                        Euros
+                      </label>
+                      <div className="fw-semibold">
+                        ${Number(viewing.deposito_euros).toFixed(2)}
+                      </div>
                     </div>
                   )}
                   {(Number(viewing.deposito_pesos || 0) > 0 ||
                     Number(viewing.deposito_usd || 0) > 0 ||
                     Number(viewing.deposito_euros || 0) > 0) && (
                     <div className="col-md-3">
-                      <label className="form-label text-muted small">Forma de pago</label>
+                      <label className="form-label text-muted small">
+                        Forma de pago
+                      </label>
                       <div className="fw-semibold">{viewing.forma_pago}</div>
                     </div>
                   )}
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={closeView}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={closeView}
+                >
                   Cerrar
                 </button>
               </div>

@@ -5,7 +5,11 @@ import { useRouter, usePathname } from "next/navigation";
 import { createTurno, updateTurno } from "@/lib/turnos-actions";
 import type { Turno } from "@/lib/turnos-actions";
 import type { StaffMember } from "@/lib/staff-actions";
-import { naiveToISO, formatDateTime, toDateTimeLocal } from "@/lib/datetime-utils";
+import {
+  naiveToISO,
+  formatDateTime,
+  toDateTimeLocal,
+} from "@/lib/datetime-utils";
 
 type Props = {
   turnos: Turno[];
@@ -21,18 +25,47 @@ const hasPhone = (t: Turno) => t.telefono.replace(/[^0-9]/g, "").length >= 10;
 const waMsgUrl = (t: Turno) => {
   const rate = t.moneda === "USD" ? 16 : t.moneda === "Euros" ? 19 : 1;
   const totalPesos = t.cotizacion * rate;
-  const paid = (t.deposito_pesos + t.pago_pesos)
-    + (t.deposito_usd + t.pago_usd) * 16
-    + (t.deposito_euros + t.pago_euros) * 19;
+  const paid =
+    t.deposito_pesos +
+    t.pago_pesos +
+    (t.deposito_usd + t.pago_usd) * 16 +
+    (t.deposito_euros + t.pago_euros) * 19;
   const remaining = Math.max(0, totalPesos - paid);
   const date = new Date(t.fecha_cita);
-  const dateStr = date.toLocaleDateString("es-MX", { timeZone: "America/Cancun", day: "2-digit", month: "2-digit", year: "numeric" });
-  const timeStr = date.toLocaleTimeString("es-MX", { timeZone: "America/Cancun", hour: "2-digit", minute: "2-digit", hour12: false });
-  const dateEn = date.toLocaleDateString("en-US", { timeZone: "America/Cancun", day: "2-digit", month: "2-digit", year: "numeric" });
-  const timeEn = date.toLocaleTimeString("en-US", { timeZone: "America/Cancun", hour: "2-digit", minute: "2-digit", hour12: false });
-  const sym = t.moneda === "Pesos" ? "$" : t.moneda === "USD" ? "USD $" : "\u20AC";
-  const pagoEs = remaining <= 0 ? "YA EST\u00C1 TOTALMENTE PAGO" : `LE QUEDA PAGAR $${remaining.toFixed(2)}`;
-  const pagoEn = remaining <= 0 ? "IT IS FULLY PAID" : `YOU HAVE $${remaining.toFixed(2)} LEFT TO PAY`;
+  const dateStr = date.toLocaleDateString("es-MX", {
+    timeZone: "America/Cancun",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const timeStr = date.toLocaleTimeString("es-MX", {
+    timeZone: "America/Cancun",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const dateEn = date.toLocaleDateString("en-US", {
+    timeZone: "America/Cancun",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const timeEn = date.toLocaleTimeString("en-US", {
+    timeZone: "America/Cancun",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const sym =
+    t.moneda === "Pesos" ? "$" : t.moneda === "USD" ? "USD $" : "\u20AC";
+  const pagoEs =
+    remaining <= 0
+      ? "YA EST\u00C1 TOTALMENTE PAGO"
+      : `LE QUEDA PAGAR $${remaining.toFixed(2)}`;
+  const pagoEn =
+    remaining <= 0
+      ? "IT IS FULLY PAID"
+      : `YOU HAVE $${remaining.toFixed(2)} LEFT TO PAY`;
   const msg = `\u00A1Hola! Te confirmamos tu turno en Bendito Tattoo.\n\n\u2022 Fecha y Hora: ${dateStr} a las ${timeStr} hs.\n\u2022 Costo total: ${sym}${t.cotizacion.toFixed(2)}\n\u2022 Estado del pago: ${pagoEs}\n\u2022 Direcci\u00F3n: https://maps.app.goo.gl/vW3qK7jbywo6gUBu5\n\n\u00A1Te esperamos! Record\u00E1 venir con ropa c\u00F3moda y bien alimentado.\n\n---\n\nHello! We confirm your appointment at Bendito Tattoo.\n\n\u2022 Date and Time: ${dateEn} at ${timeEn}\n\u2022 Total Cost: ${sym}${t.cotizacion.toFixed(2)}\n\u2022 Payment Status: ${pagoEn}\n\u2022 Address: https://maps.app.goo.gl/vW3qK7jbywo6gUBu5\n\nWe look forward to seeing you! Remember to come in comfortable clothes and well-fed.`;
   return `https://wa.me/${t.telefono.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(msg)}`;
 };
@@ -120,15 +153,26 @@ export default function TurnosTable({
     if (viewing) viewModalRef.current?.focus();
   }, [viewing]);
 
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Cancun" });
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Cancun",
+  });
   const upcomingTurnos = turnos.filter(
-    (t) => new Date(t.fecha_cita).toLocaleDateString("en-CA", { timeZone: "America/Cancun" }) >= today,
+    (t) =>
+      new Date(t.fecha_cita).toLocaleDateString("en-CA", {
+        timeZone: "America/Cancun",
+      }) >= today,
   );
   const pastTurnos = turnos
     .filter(
-      (t) => new Date(t.fecha_cita).toLocaleDateString("en-CA", { timeZone: "America/Cancun" }) < today,
+      (t) =>
+        new Date(t.fecha_cita).toLocaleDateString("en-CA", {
+          timeZone: "America/Cancun",
+        }) < today,
     )
-    .sort((a, b) => new Date(b.fecha_cita).getTime() - new Date(a.fecha_cita).getTime());
+    .sort(
+      (a, b) =>
+        new Date(b.fecha_cita).getTime() - new Date(a.fecha_cita).getTime(),
+    );
   const pastStart = pastPage * PAGE_SIZE;
   const pastSlice = pastTurnos.slice(pastStart, pastStart + PAGE_SIZE);
   const gerenteLabelById = new Map(
@@ -218,8 +262,8 @@ export default function TurnosTable({
     const fechaCita = formData.get("fecha_cita") as string;
     if (fechaCita) formData.set("fecha_cita", naiveToISO(fechaCita));
 
-    const codigoPais = formData.get("codigo_pais") as string || "+52";
-    const telefono = formData.get("telefono") as string || "";
+    const codigoPais = (formData.get("codigo_pais") as string) || "+52";
+    const telefono = (formData.get("telefono") as string) || "";
     formData.set("telefono", `${codigoPais} ${telefono}`);
 
     const action = editing ? updateTurno(formData) : createTurno(formData);
@@ -249,7 +293,9 @@ export default function TurnosTable({
           tabIndex={-1}
           style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
           ref={editModalRef}
-          onKeyDown={(e) => { if (e.key === "Escape") closeModal(); }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") closeModal();
+          }}
         >
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
@@ -282,17 +328,37 @@ export default function TurnosTable({
                     <div className="col-md-6">
                       <label className="form-label">Teléfono</label>
                       <div className="input-group">
-                        <select name="codigo_pais" className="form-select" style={{ maxWidth: 110 }} defaultValue={editing?.telefono ? (editing.telefono.split(" ")[0] ?? "+52") : "+52"}>
+                        <select
+                          name="codigo_pais"
+                          className="form-select"
+                          style={{ maxWidth: 110 }}
+                          defaultValue={
+                            editing?.telefono
+                              ? (editing.telefono.split(" ")[0] ?? "+52")
+                              : "+52"
+                          }
+                        >
                           <option value="+52">🇲🇽 +52</option>
                           <option value="+1">🇺🇸 +1</option>
                           <option value="+34">🇪🇸 +34</option>
+                          <option value="+39">🇮🇹 +39</option>
                           <option value="+54">🇦🇷 +54</option>
                           <option value="+57">🇨🇴 +57</option>
                           <option value="+56">🇨🇱 +56</option>
                           <option value="+51">🇵🇪 +51</option>
                           <option value="+598">🇺🇾 +598</option>
                         </select>
-                        <input name="telefono" type="tel" className="form-control" placeholder="5551234567" defaultValue={editing?.telefono ? editing.telefono.split(" ").slice(1).join(" ") : ""} />
+                        <input
+                          name="telefono"
+                          type="tel"
+                          className="form-control"
+                          placeholder="5551234567"
+                          defaultValue={
+                            editing?.telefono
+                              ? editing.telefono.split(" ").slice(1).join(" ")
+                              : ""
+                          }
+                        />
                       </div>
                     </div>
                     <div className="col-md-6">
@@ -357,7 +423,12 @@ export default function TurnosTable({
                     </div>
                     <div className="col-12">
                       <label className="form-label">Descripción</label>
-                      <textarea name="descripcion" className="form-control" rows={3} defaultValue={editing?.descripcion ?? ""} />
+                      <textarea
+                        name="descripcion"
+                        className="form-control"
+                        rows={3}
+                        defaultValue={editing?.descripcion ?? ""}
+                      />
                     </div>
                     {/* Cotización */}
                     <div className="col-12">
@@ -388,23 +459,43 @@ export default function TurnosTable({
                           <option value="Pesos">Pesos</option>
                           <option value="USD">USD</option>
                           <option value="Euros">Euros</option>
-                      </select>
-                      {editing && <input type="hidden" name="forma_pago" value={editing.forma_pago} />}
-                    </div>
+                        </select>
+                        {editing && (
+                          <input
+                            type="hidden"
+                            name="forma_pago"
+                            value={editing.forma_pago}
+                          />
+                        )}
+                      </div>
                     </div>
                     <div className="col-md-6 d-flex align-items-end pb-1">
                       <div className="fw-semibold fs-4">
                         {(() => {
                           const q = Number(formCotizacion || 0);
-                          const r = formMoneda === "USD" ? 16 : formMoneda === "Euros" ? 19 : 1;
+                          const r =
+                            formMoneda === "USD"
+                              ? 16
+                              : formMoneda === "Euros"
+                                ? 19
+                                : 1;
                           const qPesos = q * r;
-                          const p = Number(formDepPesos || 0) + Number(formDepUsd || 0) * 16 + Number(formDepEur || 0) * 19 + Number(formPagPesos || 0) + Number(formPagUsd || 0) * 16 + Number(formPagEur || 0) * 19;
+                          const p =
+                            Number(formDepPesos || 0) +
+                            Number(formDepUsd || 0) * 16 +
+                            Number(formDepEur || 0) * 19 +
+                            Number(formPagPesos || 0) +
+                            Number(formPagUsd || 0) * 16 +
+                            Number(formPagEur || 0) * 19;
                           const rem = Math.max(0, qPesos - p);
                           return `Falta pagar: $${rem.toFixed(2)}`;
                         })()}
                       </div>
                     </div>
-                    {(!editing || Number(formDepPesos) > 0 || Number(formDepUsd) > 0 || Number(formDepEur) > 0) && (
+                    {(!editing ||
+                      Number(formDepPesos) > 0 ||
+                      Number(formDepUsd) > 0 ||
+                      Number(formDepEur) > 0) && (
                       <>
                         <div className="col-12">
                           <hr className="my-2" />
@@ -423,10 +514,16 @@ export default function TurnosTable({
                                   className="form-control"
                                   placeholder="Pesos"
                                   value={formDepPesos}
-                                  onChange={(e) => setFormDepPesos(e.target.value)}
+                                  onChange={(e) =>
+                                    setFormDepPesos(e.target.value)
+                                  }
                                   readOnly={!!editing && !isAdmin}
                                   tabIndex={editing && !isAdmin ? -1 : 0}
-                                  style={editing && !isAdmin ? { outline: "none", boxShadow: "none" } : undefined}
+                                  style={
+                                    editing && !isAdmin
+                                      ? { outline: "none", boxShadow: "none" }
+                                      : undefined
+                                  }
                                 />
                               </div>
                             </div>
@@ -441,10 +538,16 @@ export default function TurnosTable({
                                   className="form-control"
                                   placeholder="USD"
                                   value={formDepUsd}
-                                  onChange={(e) => setFormDepUsd(e.target.value)}
+                                  onChange={(e) =>
+                                    setFormDepUsd(e.target.value)
+                                  }
                                   readOnly={!!editing && !isAdmin}
                                   tabIndex={editing && !isAdmin ? -1 : 0}
-                                  style={editing && !isAdmin ? { outline: "none", boxShadow: "none" } : undefined}
+                                  style={
+                                    editing && !isAdmin
+                                      ? { outline: "none", boxShadow: "none" }
+                                      : undefined
+                                  }
                                 />
                               </div>
                             </div>
@@ -459,10 +562,16 @@ export default function TurnosTable({
                                   className="form-control"
                                   placeholder="Euros"
                                   value={formDepEur}
-                                  onChange={(e) => setFormDepEur(e.target.value)}
+                                  onChange={(e) =>
+                                    setFormDepEur(e.target.value)
+                                  }
                                   readOnly={!!editing && !isAdmin}
                                   tabIndex={editing && !isAdmin ? -1 : 0}
-                                  style={editing && !isAdmin ? { outline: "none", boxShadow: "none" } : undefined}
+                                  style={
+                                    editing && !isAdmin
+                                      ? { outline: "none", boxShadow: "none" }
+                                      : undefined
+                                  }
                                 />
                               </div>
                             </div>
@@ -476,13 +585,23 @@ export default function TurnosTable({
                             defaultValue={editing?.forma_pago ?? ""}
                             disabled={!!editing && !isAdmin}
                             tabIndex={editing && !isAdmin ? -1 : 0}
-                            style={editing && !isAdmin ? { outline: "none", boxShadow: "none" } : undefined}
+                            style={
+                              editing && !isAdmin
+                                ? { outline: "none", boxShadow: "none" }
+                                : undefined
+                            }
                           >
                             <option value="">Seleccionar</option>
                             <option value="Efectivo">Efectivo</option>
                             <option value="Deposito">Cuenta</option>
                           </select>
-                          {editing && !isAdmin && <input type="hidden" name="forma_pago" value={editing.forma_pago} />}
+                          {editing && !isAdmin && (
+                            <input
+                              type="hidden"
+                              name="forma_pago"
+                              value={editing.forma_pago}
+                            />
+                          )}
                         </div>
                       </>
                     )}
@@ -560,21 +679,48 @@ export default function TurnosTable({
                     <div className="col-md-4">
                       <label className="form-label">% Tatuador</label>
                       <div className="input-group">
-                        <input name="porcentaje_tatuador" type="number" step="0.01" min="0" max="100" className="form-control" value={formPorcTat} onChange={(e) => setFormPorcTat(e.target.value)} />
+                        <input
+                          name="porcentaje_tatuador"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          className="form-control"
+                          value={formPorcTat}
+                          onChange={(e) => setFormPorcTat(e.target.value)}
+                        />
                         <span className="input-group-text">%</span>
                       </div>
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">% Jalador</label>
                       <div className="input-group">
-                        <input name="porcentaje_jalador" type="number" step="0.01" min="0" max="100" className="form-control" value={formPorcJal} onChange={(e) => setFormPorcJal(e.target.value)} />
+                        <input
+                          name="porcentaje_jalador"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          className="form-control"
+                          value={formPorcJal}
+                          onChange={(e) => setFormPorcJal(e.target.value)}
+                        />
                         <span className="input-group-text">%</span>
                       </div>
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">% Gerente</label>
                       <div className="input-group">
-                        <input name="porcentaje_gerente" type="number" step="0.01" min="0" max="100" className="form-control" value={formPorcGer} onChange={(e) => setFormPorcGer(e.target.value)} />
+                        <input
+                          name="porcentaje_gerente"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          className="form-control"
+                          value={formPorcGer}
+                          onChange={(e) => setFormPorcGer(e.target.value)}
+                        />
                         <span className="input-group-text">%</span>
                       </div>
                     </div>
@@ -583,12 +729,19 @@ export default function TurnosTable({
                       const porcJal = Number(formPorcJal || 0);
                       const porcGer = Number(formPorcGer || 0);
                       const suma = porcTat + porcJal + porcGer;
-                      return suma > 0 && (
-                        <div className="col-12">
-                          <small className={suma <= 100 ? "text-success" : "text-danger"}>
-                            Total comisiones: {suma}% · Tienda: {Math.max(0, 100 - suma)}%
-                          </small>
-                        </div>
+                      return (
+                        suma > 0 && (
+                          <div className="col-12">
+                            <small
+                              className={
+                                suma <= 100 ? "text-success" : "text-danger"
+                              }
+                            >
+                              Total comisiones: {suma}% · Tienda:{" "}
+                              {Math.max(0, 100 - suma)}%
+                            </small>
+                          </div>
+                        )
                       );
                     })()}
                   </div>
@@ -625,7 +778,9 @@ export default function TurnosTable({
           tabIndex={-1}
           style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
           ref={viewModalRef}
-          onKeyDown={(e) => { if (e.key === "Escape") closeView(); }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") closeView();
+          }}
         >
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
@@ -640,32 +795,57 @@ export default function TurnosTable({
               <div className="modal-body">
                 <div className="row g-3">
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Nombre</label>
+                    <label className="form-label text-muted small">
+                      Nombre
+                    </label>
                     <div className="fw-semibold">{viewing.name}</div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Teléfono</label>
+                    <label className="form-label text-muted small">
+                      Teléfono
+                    </label>
                     <div className="fw-semibold">{viewing.telefono || "-"}</div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Gerente</label>
-                    <div className="fw-semibold">{gerenteLabelById.get(viewing.gerente_id) ?? viewing.gerente_name}</div>
+                    <label className="form-label text-muted small">
+                      Gerente
+                    </label>
+                    <div className="fw-semibold">
+                      {gerenteLabelById.get(viewing.gerente_id) ??
+                        viewing.gerente_name}
+                    </div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Tatuador</label>
-                    <div className="fw-semibold">{tatuadorLabelById.get(viewing.tatuador_id) ?? viewing.tatuador_name}</div>
+                    <label className="form-label text-muted small">
+                      Tatuador
+                    </label>
+                    <div className="fw-semibold">
+                      {tatuadorLabelById.get(viewing.tatuador_id) ??
+                        viewing.tatuador_name}
+                    </div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Jalador</label>
-                    <div className="fw-semibold">{jaladorLabelById.get(viewing.jalador_id) ?? viewing.jalador_name}</div>
+                    <label className="form-label text-muted small">
+                      Jalador
+                    </label>
+                    <div className="fw-semibold">
+                      {jaladorLabelById.get(viewing.jalador_id) ??
+                        viewing.jalador_name}
+                    </div>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Fecha de la cita</label>
-                    <div className="fw-semibold">{formatDateTime(viewing.fecha_cita)}</div>
+                    <label className="form-label text-muted small">
+                      Fecha de la cita
+                    </label>
+                    <div className="fw-semibold">
+                      {formatDateTime(viewing.fecha_cita)}
+                    </div>
                   </div>
                   {viewing.descripcion && (
                     <div className="col-12">
-                      <label className="form-label text-muted small">Descripción</label>
+                      <label className="form-label text-muted small">
+                        Descripción
+                      </label>
                       <div className="fw-semibold">{viewing.descripcion}</div>
                     </div>
                   )}
@@ -674,7 +854,9 @@ export default function TurnosTable({
                     <h6 className="fw-bold mb-2">Cotización</h6>
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted small">Cotización</label>
+                    <label className="form-label text-muted small">
+                      Cotización
+                    </label>
                     <div className="fw-semibold">
                       {Number(viewing.cotizacion).toFixed(2)}{" "}
                       {viewing.moneda === "Pesos" ? "$" : viewing.moneda}
@@ -682,9 +864,20 @@ export default function TurnosTable({
                     <div className="mt-1 fw-semibold fs-4">
                       {(() => {
                         const q = Number(viewing.cotizacion);
-                        const r = viewing.moneda === "USD" ? 16 : viewing.moneda === "Euros" ? 19 : 1;
+                        const r =
+                          viewing.moneda === "USD"
+                            ? 16
+                            : viewing.moneda === "Euros"
+                              ? 19
+                              : 1;
                         const qPesos = q * r;
-                        const p = Number(viewing.deposito_pesos || 0) + Number(viewing.deposito_usd || 0) * 16 + Number(viewing.deposito_euros || 0) * 19 + Number(viewing.pago_pesos || 0) + Number(viewing.pago_usd || 0) * 16 + Number(viewing.pago_euros || 0) * 19;
+                        const p =
+                          Number(viewing.deposito_pesos || 0) +
+                          Number(viewing.deposito_usd || 0) * 16 +
+                          Number(viewing.deposito_euros || 0) * 19 +
+                          Number(viewing.pago_pesos || 0) +
+                          Number(viewing.pago_usd || 0) * 16 +
+                          Number(viewing.pago_euros || 0) * 19;
                         const rem = Math.max(0, qPesos - p);
                         return `Falta pagar: $${rem.toFixed(2)}`;
                       })()}
@@ -700,27 +893,39 @@ export default function TurnosTable({
                   )}
                   {Number(viewing.deposito_pesos || 0) > 0 && (
                     <div className="col-md-3">
-                      <label className="form-label text-muted small">Pesos</label>
-                      <div className="fw-semibold">${Number(viewing.deposito_pesos).toFixed(2)}</div>
+                      <label className="form-label text-muted small">
+                        Pesos
+                      </label>
+                      <div className="fw-semibold">
+                        ${Number(viewing.deposito_pesos).toFixed(2)}
+                      </div>
                     </div>
                   )}
                   {Number(viewing.deposito_usd || 0) > 0 && (
                     <div className="col-md-3">
                       <label className="form-label text-muted small">USD</label>
-                      <div className="fw-semibold">${Number(viewing.deposito_usd).toFixed(2)}</div>
+                      <div className="fw-semibold">
+                        ${Number(viewing.deposito_usd).toFixed(2)}
+                      </div>
                     </div>
                   )}
                   {Number(viewing.deposito_euros || 0) > 0 && (
                     <div className="col-md-3">
-                      <label className="form-label text-muted small">Euros</label>
-                      <div className="fw-semibold">${Number(viewing.deposito_euros).toFixed(2)}</div>
+                      <label className="form-label text-muted small">
+                        Euros
+                      </label>
+                      <div className="fw-semibold">
+                        ${Number(viewing.deposito_euros).toFixed(2)}
+                      </div>
                     </div>
                   )}
                   {(Number(viewing.deposito_pesos || 0) > 0 ||
                     Number(viewing.deposito_usd || 0) > 0 ||
                     Number(viewing.deposito_euros || 0) > 0) && (
                     <div className="col-md-3">
-                      <label className="form-label text-muted small">Forma de pago</label>
+                      <label className="form-label text-muted small">
+                        Forma de pago
+                      </label>
                       <div className="fw-semibold">{viewing.forma_pago}</div>
                     </div>
                   )}
@@ -730,18 +935,26 @@ export default function TurnosTable({
                   </div>
                   <div className="col-md-3">
                     <label className="form-label text-muted small">Pesos</label>
-                    <div className="fw-semibold">${Number(viewing.pago_pesos || 0).toFixed(2)}</div>
+                    <div className="fw-semibold">
+                      ${Number(viewing.pago_pesos || 0).toFixed(2)}
+                    </div>
                   </div>
                   <div className="col-md-3">
                     <label className="form-label text-muted small">USD</label>
-                    <div className="fw-semibold">${Number(viewing.pago_usd || 0).toFixed(2)}</div>
+                    <div className="fw-semibold">
+                      ${Number(viewing.pago_usd || 0).toFixed(2)}
+                    </div>
                   </div>
                   <div className="col-md-3">
                     <label className="form-label text-muted small">Euros</label>
-                    <div className="fw-semibold">${Number(viewing.pago_euros || 0).toFixed(2)}</div>
+                    <div className="fw-semibold">
+                      ${Number(viewing.pago_euros || 0).toFixed(2)}
+                    </div>
                   </div>
                   <div className="col-md-3">
-                    <label className="form-label text-muted small">Forma de pago</label>
+                    <label className="form-label text-muted small">
+                      Forma de pago
+                    </label>
                     <div className="fw-semibold">{viewing.pago_forma_pago}</div>
                   </div>
                   <div className="col-12">
@@ -749,36 +962,57 @@ export default function TurnosTable({
                     <h6 className="fw-bold mb-2">Comisiones</h6>
                   </div>
                   {(() => {
-                    const cotPesos = Number(viewing.cotizacion) * (viewing.moneda === "USD" ? 16 : viewing.moneda === "Euros" ? 19 : 1);
+                    const cotPesos =
+                      Number(viewing.cotizacion) *
+                      (viewing.moneda === "USD"
+                        ? 16
+                        : viewing.moneda === "Euros"
+                          ? 19
+                          : 1);
                     const pTat = Number(viewing.porcentaje_tatuador || 0);
                     const pJal = Number(viewing.porcentaje_jalador || 0);
                     const pGer = Number(viewing.porcentaje_gerente || 0);
                     const totalP = pTat + pJal + pGer;
-                    const mTat = cotPesos * pTat / 100;
-                    const mJal = cotPesos * pJal / 100;
-                    const mGer = cotPesos * pGer / 100;
+                    const mTat = (cotPesos * pTat) / 100;
+                    const mJal = (cotPesos * pJal) / 100;
+                    const mGer = (cotPesos * pGer) / 100;
                     const shop = cotPesos - mTat - mJal - mGer;
                     return (
                       <>
                         <div className="col-md-3">
-                          <label className="form-label text-muted small">Cotización en pesos</label>
-                          <div className="fw-semibold">${cotPesos.toFixed(2)}</div>
+                          <label className="form-label text-muted small">
+                            Cotización en pesos
+                          </label>
+                          <div className="fw-semibold">
+                            ${cotPesos.toFixed(2)}
+                          </div>
                         </div>
                         <div className="col-md-3">
-                          <label className="form-label text-muted small">Tatuador ({pTat}%)</label>
+                          <label className="form-label text-muted small">
+                            Tatuador ({pTat}%)
+                          </label>
                           <div className="fw-semibold">${mTat.toFixed(2)}</div>
                         </div>
                         <div className="col-md-3">
-                          <label className="form-label text-muted small">Jalador ({pJal}%)</label>
+                          <label className="form-label text-muted small">
+                            Jalador ({pJal}%)
+                          </label>
                           <div className="fw-semibold">${mJal.toFixed(2)}</div>
                         </div>
                         <div className="col-md-3">
-                          <label className="form-label text-muted small">Gerente ({pGer}%)</label>
+                          <label className="form-label text-muted small">
+                            Gerente ({pGer}%)
+                          </label>
                           <div className="fw-semibold">${mGer.toFixed(2)}</div>
                         </div>
                         <div className="col-12">
-                          <small className={shop >= 0 ? "text-success" : "text-danger"}>
-                            Tienda: ${shop.toFixed(2)} ({Math.max(0, 100 - totalP)}%)
+                          <small
+                            className={
+                              shop >= 0 ? "text-success" : "text-danger"
+                            }
+                          >
+                            Tienda: ${shop.toFixed(2)} (
+                            {Math.max(0, 100 - totalP)}%)
                           </small>
                         </div>
                       </>
