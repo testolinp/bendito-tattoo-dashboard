@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   open: boolean;
@@ -9,7 +9,7 @@ type Props = {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: "danger" | "dark";
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   onCancel: () => void;
 };
 
@@ -24,10 +24,24 @@ export default function ConfirmDialog({
   onCancel,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const confirmingRef = useRef(false);
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     if (open) ref.current?.focus();
   }, [open]);
+
+  const handleConfirm = async () => {
+    if (confirmingRef.current) return;
+    confirmingRef.current = true;
+    setConfirming(true);
+    try {
+      await onConfirm();
+    } finally {
+      confirmingRef.current = false;
+      setConfirming(false);
+    }
+  };
 
   if (!open) return null;
 
@@ -38,7 +52,7 @@ export default function ConfirmDialog({
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
       ref={ref}
       onKeyDown={(e) => {
-        if (e.key === "Escape") onCancel();
+        if (e.key === "Escape" && !confirming) onCancel();
       }}
     >
       <div className="modal-dialog modal-dialog-centered modal-sm">
@@ -48,6 +62,7 @@ export default function ConfirmDialog({
             <button
               type="button"
               className="btn-close"
+              disabled={confirming}
               onClick={onCancel}
             />
           </div>
@@ -58,6 +73,7 @@ export default function ConfirmDialog({
             <button
               type="button"
               className="btn btn-secondary"
+              disabled={confirming}
               onClick={onCancel}
             >
               {cancelLabel}
@@ -65,9 +81,10 @@ export default function ConfirmDialog({
             <button
               type="button"
               className={`btn btn-${variant}`}
-              onClick={onConfirm}
+              disabled={confirming}
+              onClick={handleConfirm}
             >
-              {confirmLabel}
+              {confirming ? "Procesando..." : confirmLabel}
             </button>
           </div>
         </div>

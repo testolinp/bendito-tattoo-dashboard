@@ -7,6 +7,7 @@ import {
   updateAppointment,
   cancelAppointment,
   completeAppointment,
+  deleteAppointment,
 } from "@/lib/appointments-actions";
 import type { Appointment } from "@/lib/appointments-actions";
 import type { StaffMember } from "@/lib/staff-actions";
@@ -17,7 +18,7 @@ import {
 } from "@/lib/datetime-utils";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 const hasPhone = (a: Appointment) =>
   a.telefono.replace(/[^0-9]/g, "").length >= 10;
 
@@ -70,6 +71,7 @@ type Props = {
   gerentes: StaffMember[];
   tatuadores: StaffMember[];
   jaladores: StaffMember[];
+  isAdmin: boolean;
 };
 
 const statusLabels: Record<string, string> = {
@@ -129,6 +131,7 @@ export default function CitasTable({
   gerentes,
   tatuadores,
   jaladores,
+  isAdmin,
 }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
@@ -140,6 +143,7 @@ export default function CitasTable({
   const [pendingCompleteId, setPendingCompleteId] = useState<number | null>(
     null,
   );
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
   const [formCotizacion, setFormCotizacion] = useState("");
   const [formMoneda, setFormMoneda] = useState("Pesos");
@@ -239,6 +243,10 @@ export default function CitasTable({
     setPendingCompleteId(id);
   };
 
+  const handleDelete = (id: number) => {
+    setPendingDeleteId(id);
+  };
+
   // formatDateTime and toDateTimeLocal now imported from datetime-utils
 
   function renderTable(
@@ -268,7 +276,7 @@ export default function CitasTable({
                 <th className="d-none d-md-table-cell">Cotización</th>
                 <th>Fecha de cita</th>
                 <th className="d-none d-md-table-cell">Estado</th>
-                <th style={{ width: 220 }}>Acciones</th>
+                <th style={{ width: 320 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -340,12 +348,20 @@ export default function CitasTable({
                             Concretar
                           </button>
                           <button
-                            className="btn btn-sm btn-outline-danger"
+                            className="btn btn-sm btn-outline-danger me-1"
                             onClick={() => handleCancel(a.id)}
                           >
                             Cancelar
                           </button>
                         </>
+                      )}
+                      {isAdmin && (
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDelete(a.id)}
+                        >
+                          Eliminar
+                        </button>
                       )}
                     </td>
                   )}
@@ -376,6 +392,14 @@ export default function CitasTable({
                         <span className="btn btn-sm btn-outline-secondary disabled me-1">
                           Mensaje
                         </span>
+                      )}
+                      {isAdmin && (
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDelete(a.id)}
+                        >
+                          Eliminar
+                        </button>
                       )}
                     </td>
                   )}
@@ -422,6 +446,20 @@ export default function CitasTable({
           }
         }}
         onCancel={() => setPendingCompleteId(null)}
+      />
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Eliminar cita"
+        message="¿Eliminar esta cita? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={async () => {
+          if (pendingDeleteId === null) return;
+          const result = await deleteAppointment(pendingDeleteId);
+          setPendingDeleteId(null);
+          if (result?.error) alert(result.error);
+        }}
+        onCancel={() => setPendingDeleteId(null)}
       />
 
       <div className="d-flex justify-content-between align-items-center mb-3">

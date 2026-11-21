@@ -99,3 +99,23 @@ export async function updateTurno(formData: FormData) {
   if (error) return { error: error.message };
   revalidatePath("/dashboard/turnos");
 }
+
+export async function deleteTurno(id: number) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (
+    !user ||
+    (user.email !== "admin@benditotattoo.com" &&
+      user.user_metadata?.is_admin !== true)
+  ) {
+    return { error: "No tenés permisos para eliminar turnos" };
+  }
+
+  const { error } = await supabase.from("turnos").delete().eq("id", id);
+
+  if (error) return { error: error.message };
+  revalidatePath("/dashboard/turnos");
+}

@@ -99,3 +99,31 @@ export async function completeAppointment(id: number) {
   revalidatePath("/dashboard/citas");
   return { turnoId: data as number };
 }
+
+export async function deleteAppointment(id: number) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (
+    !user ||
+    (user.email !== "admin@benditotattoo.com" &&
+      user.user_metadata?.is_admin !== true)
+  ) {
+    return { error: "No tenés permisos para eliminar citas" };
+  }
+
+  const { error: turnosError } = await supabase
+    .from("turnos")
+    .update({ appointment_id: null })
+    .eq("appointment_id", id);
+
+  if (turnosError) return { error: turnosError.message };
+
+  const { error } = await supabase.from("appointments").delete().eq("id", id);
+
+  if (error) return { error: error.message };
+  revalidatePath("/dashboard/citas");
+  revalidatePath("/dashboard/turnos");
+}

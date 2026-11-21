@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { createTurno, updateTurno } from "@/lib/turnos-actions";
+import { createTurno, updateTurno, deleteTurno } from "@/lib/turnos-actions";
 import type { Turno } from "@/lib/turnos-actions";
 import type { StaffMember } from "@/lib/staff-actions";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   naiveToISO,
   formatDateTime,
@@ -19,7 +20,7 @@ type Props = {
   editTurnoId?: number | null;
   isAdmin: boolean;
 };
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 const hasPhone = (t: Turno) => t.telefono.replace(/[^0-9]/g, "").length >= 10;
 
 const waMsgUrl = (t: Turno) => {
@@ -128,6 +129,7 @@ export default function TurnosTable({
   const [viewing, setViewing] = useState<Turno | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [pastPage, setPastPage] = useState(0);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
   const [formCotizacion, setFormCotizacion] = useState("");
   const [formMoneda, setFormMoneda] = useState("Pesos");
@@ -249,6 +251,10 @@ export default function TurnosTable({
 
   const closeView = () => {
     setViewing(null);
+  };
+
+  const handleDelete = (id: number) => {
+    setPendingDeleteId(id);
   };
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -1051,7 +1057,7 @@ export default function TurnosTable({
                 <th className="d-none d-md-table-cell">Jalador</th>
                 <th className="d-none d-md-table-cell">Cotización</th>
                 <th>Fecha de cita</th>
-                <th style={{ width: 160 }}>Acciones</th>
+                <th style={{ width: 220 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -1092,21 +1098,29 @@ export default function TurnosTable({
                     >
                       Editar
                     </button>
-                    {hasPhone(t) ? (
-                      <a
-                        href={waMsgUrl(t)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-sm btn-outline-success me-1"
-                      >
-                        Mensaje
-                      </a>
-                    ) : (
-                      <span className="btn btn-sm btn-outline-secondary disabled me-1">
-                        Mensaje
-                      </span>
-                    )}
-                  </td>
+                      {hasPhone(t) ? (
+                        <a
+                          href={waMsgUrl(t)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-sm btn-outline-success me-1"
+                        >
+                          Mensaje
+                        </a>
+                      ) : (
+                        <span className="btn btn-sm btn-outline-secondary disabled me-1">
+                          Mensaje
+                        </span>
+                      )}
+                      {isAdmin && (
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDelete(t.id)}
+                        >
+                          Eliminar
+                        </button>
+                      )}
+                    </td>
                 </tr>
               ))}
             </tbody>
@@ -1131,7 +1145,7 @@ export default function TurnosTable({
                 <th className="d-none d-md-table-cell">Jalador</th>
                 <th className="d-none d-md-table-cell">Cotización</th>
                 <th>Fecha de cita</th>
-                <th style={{ width: 160 }}>Acciones</th>
+                <th style={{ width: 220 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -1172,21 +1186,29 @@ export default function TurnosTable({
                         Editar
                       </button>
                     )}
-                    {hasPhone(t) ? (
-                      <a
-                        href={waMsgUrl(t)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-sm btn-outline-success me-1"
-                      >
-                        Mensaje
-                      </a>
-                    ) : (
-                      <span className="btn btn-sm btn-outline-secondary disabled me-1">
-                        Mensaje
-                      </span>
-                    )}
-                  </td>
+                      {hasPhone(t) ? (
+                        <a
+                          href={waMsgUrl(t)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-sm btn-outline-success me-1"
+                        >
+                          Mensaje
+                        </a>
+                      ) : (
+                        <span className="btn btn-sm btn-outline-secondary disabled me-1">
+                          Mensaje
+                        </span>
+                      )}
+                      {isAdmin && (
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDelete(t.id)}
+                        >
+                          Eliminar
+                        </button>
+                      )}
+                    </td>
                 </tr>
               ))}
             </tbody>
@@ -1198,6 +1220,20 @@ export default function TurnosTable({
           onChange={setPastPage}
         />
       </div>
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Eliminar turno"
+        message="¿Eliminar este turno? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={async () => {
+          if (pendingDeleteId === null) return;
+          const result = await deleteTurno(pendingDeleteId);
+          setPendingDeleteId(null);
+          if (result?.error) alert(result.error);
+        }}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </>
   );
 }
