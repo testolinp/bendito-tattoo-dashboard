@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense, useRef } from "react";
-import { useSearchParams } from "next/navigation";
 import {
   getPaymentSummary,
   getConfirmedPayments,
@@ -10,43 +9,9 @@ import {
   type PaymentSummary,
   type PersonPayment,
 } from "@/lib/pagos-actions";
-
-type Period = "week" | "month";
-
-const periodLabels: Record<Period, string> = {
-  week: "Semana",
-  month: "Mes",
-};
-
-function getDateRange(period: Period, offset: number) {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-
-  if (period === "week") {
-    const d = new Date(now);
-    d.setDate(d.getDate() + offset * 7);
-    const day = d.getDay();
-    const sun = new Date(d);
-    sun.setDate(d.getDate() - day);
-    const nextSun = new Date(sun);
-    nextSun.setDate(sun.getDate() + 7);
-    const label = `${sun.toLocaleDateString("es-MX", { day: "numeric", month: "short" })} - ${new Date(nextSun.getTime() - 86400000).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}`;
-    return { start: sun, end: nextSun, label };
-  }
-
-  if (period === "month") {
-    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
-    const start = new Date(d);
-    const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-    const label = d.toLocaleDateString("es-MX", {
-      month: "long",
-      year: "numeric",
-    });
-    return { start, end, label };
-  }
-
-  return { start: now, end: now, label: "" };
-}
+import { rangeToISO } from "@/lib/datetime-utils";
+import { useSharedDateRange } from "@/lib/date-range-store";
+import PeriodFilter from "@/components/PeriodFilter";
 
 const fmt = (n: number) =>
   n.toLocaleString("es-MX", {
@@ -124,11 +89,7 @@ export default function PagosPage() {
 }
 
 function PagosContent() {
-  const searchParams = useSearchParams();
-  const initialPeriodRaw = searchParams.get("period");
-  const initialPeriod: Period = initialPeriodRaw === "week" || initialPeriodRaw === "month" ? initialPeriodRaw : "week";
-  const [period, setPeriod] = useState<Period>(initialPeriod);
-  const [offset, setOffset] = useState(0);
+  const [range, setRange] = useSharedDateRange();
   const [summary, setSummary] = useState<PaymentSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmedMap, setConfirmedMap] = useState<Map<string, string>>(new Map());
@@ -139,9 +100,7 @@ function PagosContent() {
   const [paymentMethod, setPaymentMethod] = useState("Efectivo");
   const modalRef = useRef<HTMLDivElement>(null);
 
-  const { start, end, label } = getDateRange(period, offset);
-  const startISO = start.toISOString();
-  const endISO = end.toISOString();
+  const { start: startISO, end: endISO } = rangeToISO(range);
 
   useEffect(() => {
     if (confirmingPerson) modalRef.current?.focus();
@@ -270,44 +229,7 @@ function PagosContent() {
         </button>
       </div>
 
-      <div className="d-flex flex-wrap align-items-center gap-2 mb-4">
-        <div className="btn-group" role="group">
-          {(Object.entries(periodLabels) as [Period, string][]).map(
-            ([key, text]) => (
-              <button
-                key={key}
-                className={`btn btn-sm ${period === key ? "btn-dark" : "btn-outline-dark"}`}
-                onClick={() => {
-                  setPeriod(key);
-                  setOffset(0);
-                }}
-              >
-                {text}
-              </button>
-            ),
-          )}
-        </div>
-        <div className="d-flex align-items-center gap-2 ms-2">
-          <button
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => setOffset((o) => o - 1)}
-          >
-            ◀
-          </button>
-          <span
-            className="fw-semibold text-capitalize"
-            style={{ minWidth: 160, textAlign: "center" }}
-          >
-            {label}
-          </span>
-          <button
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => setOffset((o) => o + 1)}
-          >
-            ▶
-          </button>
-        </div>
-      </div>
+      <PeriodFilter range={range} onChange={setRange} />
 
       {loading ? (
         <div className="d-flex justify-content-center align-items-center" style={{ height: "calc(100vh - 12rem)" }}>

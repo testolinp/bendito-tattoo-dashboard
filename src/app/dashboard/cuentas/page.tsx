@@ -1,47 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import {
   getCuentasSummary,
   type CuentasSummary,
   type CurrencyBreakdown,
 } from "@/lib/cuentas-actions";
 import { createEgreso, updateEgreso, deleteEgreso, type Egreso } from "@/lib/egresos-actions";
+import { businessToday, rangeToISO } from "@/lib/datetime-utils";
+import { useSharedDateRange } from "@/lib/date-range-store";
 import ConfirmDialog from "@/components/ConfirmDialog";
-
-type Period = "week" | "month";
-
-const periodLabels: Record<Period, string> = {
-  week: "Semana",
-  month: "Mes",
-};
-
-function getDateRange(period: Period, offset: number) {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-
-  if (period === "week") {
-    const d = new Date(now);
-    d.setDate(d.getDate() + offset * 7);
-    const day = d.getDay();
-    const sun = new Date(d);
-    sun.setDate(d.getDate() - day);
-    const nextSun = new Date(sun);
-    nextSun.setDate(sun.getDate() + 7);
-    const label = `${sun.toLocaleDateString("es-MX", { day: "numeric", month: "short" })} - ${new Date(nextSun.getTime() - 86400000).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}`;
-    return { start: sun, end: nextSun, label };
-  }
-
-  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
-  const start = new Date(d);
-  const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-  const label = d.toLocaleDateString("es-MX", {
-    month: "long",
-    year: "numeric",
-  });
-  return { start, end, label };
-}
+import PeriodFilter from "@/components/PeriodFilter";
 
 const fmt = (n: number) =>
   n.toLocaleString("es-MX", {
@@ -69,43 +38,25 @@ export default function CuentasPage() {
 }
 
 function CuentasContent() {
-  const searchParams = useSearchParams();
-  const periodParam = searchParams.get("period");
-  const offsetParam = searchParams.get("offset");
-  const initialPeriod: Period =
-    periodParam === "week" || periodParam === "month" ? periodParam : "week";
-  const initialOffset = offsetParam ? parseInt(offsetParam, 10) : 0;
-
-  const [period, setPeriod] = useState<Period>(initialPeriod);
-  const [offset, setOffset] = useState(initialOffset);
+  const [range, setRange] = useSharedDateRange();
   const [summary, setSummary] = useState<CuentasSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [showEgresoModal, setShowEgresoModal] = useState(false);
   const [egresoAmount, setEgresoAmount] = useState("");
   const [egresoMethod, setEgresoMethod] = useState("Efectivo");
   const [egresoDescription, setEgresoDescription] = useState("");
-  const [egresoDate, setEgresoDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [egresoDate, setEgresoDate] = useState(() => businessToday());
   const [editingEgreso, setEditingEgreso] = useState<Egreso | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Egreso | null>(null);
   const egresoModalRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    params.set("period", period);
-    params.set("offset", String(offset));
-    window.history.replaceState(null, "", `?${params.toString()}`);
-  }, [period, offset]);
-
   const fetchSummary = useCallback(async () => {
     setLoading(true);
-    const { start, end } = getDateRange(period, offset);
-    const data = await getCuentasSummary(
-      start.toISOString(),
-      end.toISOString()
-    );
+    const { start, end } = rangeToISO(range);
+    const data = await getCuentasSummary(start, end);
     setSummary(data);
     setLoading(false);
-  }, [period, offset]);
+  }, [range]);
 
   useEffect(() => {
     fetchSummary();
@@ -119,7 +70,7 @@ function CuentasContent() {
     setEgresoAmount("");
     setEgresoMethod("Efectivo");
     setEgresoDescription("");
-    setEgresoDate(new Date().toISOString().slice(0, 10));
+    setEgresoDate(businessToday());
     setEditingEgreso(null);
   };
 
@@ -186,8 +137,6 @@ function CuentasContent() {
     setShowEgresoModal(true);
   };
 
-  const { label } = getDateRange(period, offset);
-
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -202,44 +151,7 @@ function CuentasContent() {
         </div>
       </div>
 
-      <div className="d-flex flex-wrap align-items-center gap-2 mb-4">
-        <div className="btn-group" role="group">
-          {(Object.entries(periodLabels) as [Period, string][]).map(
-            ([key, text]) => (
-              <button
-                key={key}
-                className={`btn btn-sm ${period === key ? "btn-dark" : "btn-outline-dark"}`}
-                onClick={() => {
-                  setPeriod(key);
-                  setOffset(0);
-                }}
-              >
-                {text}
-              </button>
-            ),
-          )}
-        </div>
-        <div className="d-flex align-items-center gap-2 ms-2">
-          <button
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => setOffset((o) => o - 1)}
-          >
-            ◀
-          </button>
-          <span
-            className="fw-semibold text-capitalize"
-            style={{ minWidth: 160, textAlign: "center" }}
-          >
-            {label}
-          </span>
-          <button
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => setOffset((o) => o + 1)}
-          >
-            ▶
-          </button>
-        </div>
-      </div>
+      <PeriodFilter range={range} onChange={setRange} />
 
       {loading ? (
         <div className="d-flex justify-content-center align-items-center" style={{ height: "calc(100vh - 12rem)" }}>

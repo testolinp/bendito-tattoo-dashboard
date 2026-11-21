@@ -1,70 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import {
   getIncomeStats,
   type IncomeStats,
   type TurnoRow,
 } from "@/lib/dashboard-actions";
-import { formatDateTime } from "@/lib/datetime-utils";
+import { formatDateTime, rangeToISO } from "@/lib/datetime-utils";
+import { useSharedDateRange } from "@/lib/date-range-store";
+import PeriodFilter from "@/components/PeriodFilter";
 import Link from "next/link";
-
-type Period = "day" | "week" | "month";
-
-const periodLabels: Record<Period, string> = {
-  day: "Hoy",
-  week: "Semana",
-  month: "Mes",
-};
-
-function getDateRange(period: Period, offset: number) {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-
-  if (period === "day") {
-    const d = new Date(now);
-    d.setDate(d.getDate() + offset);
-    const start = new Date(d);
-    const end = new Date(d);
-    end.setDate(end.getDate() + 1);
-    return {
-      start,
-      end,
-      label: d.toLocaleDateString("es-MX", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }),
-    };
-  }
-
-  if (period === "week") {
-    const d = new Date(now);
-    d.setDate(d.getDate() + offset * 7);
-    const day = d.getDay();
-    const sun = new Date(d);
-    sun.setDate(d.getDate() - day);
-    const nextSun = new Date(sun);
-    nextSun.setDate(sun.getDate() + 7);
-    const end = new Date(nextSun);
-    const label = `${sun.toLocaleDateString("es-MX", { day: "numeric", month: "short" })} - ${new Date(nextSun.getTime() - 86400000).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}`;
-    return { start: sun, end, label };
-  }
-
-  if (period === "month") {
-    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
-    const start = new Date(d);
-    const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-    const label = d.toLocaleDateString("es-MX", {
-      month: "long",
-      year: "numeric",
-    });
-    return { start, end, label };
-  }
-
-  return { start: now, end: now, label: "" };
-}
 
 const fmt = (n: number) =>
   n === 0
@@ -85,17 +30,7 @@ export default function DashboardCards() {
 }
 
 function DashboardCardsInner() {
-  const searchParams = useSearchParams();
-  const periodParam = searchParams.get("period");
-  const offsetParam = searchParams.get("offset");
-  const initialPeriod: Period =
-    periodParam === "day" || periodParam === "week" || periodParam === "month"
-      ? periodParam
-      : "day";
-  const initialOffset = offsetParam ? parseInt(offsetParam, 10) : 0;
-
-  const [period, setPeriod] = useState<Period>(initialPeriod);
-  const [offset, setOffset] = useState(initialOffset);
+  const [range, setRange] = useSharedDateRange();
   const [stats, setStats] = useState<IncomeStats | null>(null);
   const [viewing, setViewing] = useState<TurnoRow | null>(null);
   const viewModalRef = useRef<HTMLDivElement>(null);
@@ -105,30 +40,24 @@ function DashboardCardsInner() {
   }, [viewing]);
 
   const fetchStats = useCallback(async () => {
-    const { start, end } = getDateRange(period, offset);
-    const data = await getIncomeStats(start.toISOString(), end.toISOString());
+    const { start, end } = rangeToISO(range);
+    const data = await getIncomeStats(start, end);
     setStats(data);
-  }, [period, offset]);
+  }, [range]);
 
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    params.set("period", period);
-    params.set("offset", String(offset));
-    window.history.replaceState(null, "", `?${params.toString()}`);
-  }, [period, offset]);
-
-  const { label } = getDateRange(period, offset);
 
   return (
     <>
       <div className="d-flex flex-wrap align-items-center justify-content-between mb-4">
         <h2 className="h4 mb-0">Dashboard</h2>
         <div className="d-flex gap-2">
-          <Link href={`/dashboard/pagos?period=${period}`} className="btn btn-sm btn-dark">
+          <Link
+            href={`/dashboard/pagos?from=${range.from}&to=${range.to}`}
+            className="btn btn-sm btn-dark"
+          >
             Pagos
           </Link>
           <button className="btn btn-sm btn-outline-secondary" onClick={() => window.print()}>
@@ -136,44 +65,7 @@ function DashboardCardsInner() {
           </button>
         </div>
       </div>
-      <div className="d-flex flex-wrap align-items-center gap-2 mb-4">
-        <div className="btn-group" role="group">
-          {(Object.entries(periodLabels) as [Period, string][]).map(
-            ([key, text]) => (
-              <button
-                key={key}
-                className={`btn btn-sm ${period === key ? "btn-dark" : "btn-outline-dark"}`}
-                onClick={() => {
-                  setPeriod(key);
-                  setOffset(0);
-                }}
-              >
-                {text}
-              </button>
-            ),
-          )}
-        </div>
-        <div className="d-flex align-items-center gap-2 ms-2">
-          <button
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => setOffset((o) => o - 1)}
-          >
-            ◀
-          </button>
-          <span
-            className="fw-semibold text-capitalize"
-            style={{ minWidth: 160, textAlign: "center" }}
-          >
-            {label}
-          </span>
-          <button
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => setOffset((o) => o + 1)}
-          >
-            ▶
-          </button>
-        </div>
-      </div>
+      <PeriodFilter range={range} onChange={setRange} />
 
       {stats && (
         <>
