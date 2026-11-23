@@ -2,6 +2,9 @@ import { getStaff } from "@/lib/staff-actions";
 import { getAppointments } from "@/lib/appointments-actions";
 import { createClient } from "@/lib/supabase/server";
 import CitasTable from "@/components/CitasTable";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Citas" };
 
 export default async function CitasPage() {
   const [appointments, gerentes, tatuadores, jaladores, supabase] =

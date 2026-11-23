@@ -3,7 +3,7 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 const protectedRoutes = ["/dashboard"];
 const authRoutes = ["/login"];
-const adminRoutes = ["/dashboard/users", "/dashboard/cuentas", "/dashboard/pagos", "/dashboard"];
+const adminRoutes = ["/dashboard/users", "/dashboard/cuentas", "/dashboard/pagos", "/dashboard/cierres", "/dashboard"];
 
 export async function proxy(request: NextRequest) {
   const { user, supabaseResponse } = await updateSession(request);

@@ -1005,3 +1005,23 @@ $$;
 GRANT EXECUTE ON FUNCTION create_appointment(text, text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, timestamptz, numeric, numeric, numeric) TO authenticated;
 GRANT EXECUTE ON FUNCTION update_appointment(bigint, text, text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, timestamptz, numeric, numeric, numeric) TO authenticated;
 GRANT EXECUTE ON FUNCTION complete_appointment(bigint) TO authenticated;
+
+-- Cierres: snapshot del tab Cuentas para un rango de fechas
+CREATE TABLE IF NOT EXISTS cierres (
+  id BIGSERIAL PRIMARY KEY,
+  fecha_desde DATE NOT NULL,
+  fecha_hasta DATE NOT NULL,
+  snapshot JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT cierres_rango_valido CHECK (fecha_desde <= fecha_hasta)
+);
+
+ALTER TABLE cierres ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON TABLE cierres TO anon;
+GRANT ALL ON TABLE cierres TO authenticated;
+GRANT ALL ON TABLE cierres TO service_role;
+GRANT USAGE ON SEQUENCE cierres_id_seq TO anon;
+GRANT USAGE ON SEQUENCE cierres_id_seq TO authenticated;
+GRANT USAGE ON SEQUENCE cierres_id_seq TO service_role;
+DROP POLICY IF EXISTS "auth_all" ON cierres;
+CREATE POLICY "auth_all" ON cierres FOR ALL TO authenticated USING (true) WITH CHECK (true);

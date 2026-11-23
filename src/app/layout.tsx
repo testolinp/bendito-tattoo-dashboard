@@ -13,7 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bendito Tattoo - Dashboard",
+  title: {
+    default: "Bendito Tattoo",
+    template: "%s | Bendito Tattoo",
+  },
   description: "Panel de administración de Bendito Tattoo",
   icons: [
     { rel: "icon", url: "/logo.jpeg" },

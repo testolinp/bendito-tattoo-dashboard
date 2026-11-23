@@ -2,6 +2,9 @@ import { getStaff } from "@/lib/staff-actions";
 import { getTurnos } from "@/lib/turnos-actions";
 import { createClient } from "@/lib/supabase/server";
 import TurnosTable from "@/components/TurnosTable";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Turnos" };
 
 export default async function TurnosPage({
   searchParams,

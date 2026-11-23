@@ -21,6 +21,7 @@ const financeNav = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Cuentas", href: "/dashboard/cuentas" },
   { label: "Pagos", href: "/dashboard/pagos" },
+  { label: "Cierres", href: "/dashboard/cierres" },
 ];
 
 type Props = {
