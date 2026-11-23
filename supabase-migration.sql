@@ -861,3 +861,147 @@ CREATE POLICY "auth_all" ON site_settings FOR ALL TO authenticated USING (true) 
 -- Ensure there is always a row with id=1
 INSERT INTO site_settings (id, sidebar_title) VALUES (1, 'Bendito Tattoo')
 ON CONFLICT (id) DO NOTHING;
+
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS porcentaje_tatuador NUMERIC(5,2) NOT NULL DEFAULT 0;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS porcentaje_jalador NUMERIC(5,2) NOT NULL DEFAULT 0;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS porcentaje_gerente NUMERIC(5,2) NOT NULL DEFAULT 0;
+
+CREATE OR REPLACE FUNCTION get_appointments()
+RETURNS JSON
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN (
+    SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
+    FROM (
+      SELECT
+        a.id, a.name, a.telefono,
+        a.gerente_id, COALESCE(NULLIF(g.nickname, ''), g.name) AS gerente_name,
+        a.tatuador_id, COALESCE(NULLIF(t.nickname, ''), t.name) AS tatuador_name,
+        a.jalador_id, COALESCE(NULLIF(j.nickname, ''), j.name) AS jalador_name,
+        a.cotizacion, a.moneda,
+        a.deposito_pesos, a.deposito_usd, a.deposito_euros,
+        a.forma_pago, a.descripcion,
+        a.porcentaje_tatuador, a.porcentaje_jalador, a.porcentaje_gerente,
+        a.fecha_cita, a.status
+      FROM appointments a
+      LEFT JOIN staff g ON a.gerente_id = g.id
+      LEFT JOIN staff t ON a.tatuador_id = t.id
+      LEFT JOIN staff j ON a.jalador_id = j.id
+      ORDER BY a.created_at DESC
+    ) t
+  );
+END;
+$$;
+
+DROP FUNCTION IF EXISTS create_appointment(text, text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, timestamptz);
+CREATE OR REPLACE FUNCTION create_appointment(
+  p_name text,
+  p_telefono text,
+  p_descripcion text,
+  p_gerente_id bigint,
+  p_tatuador_id bigint,
+  p_jalador_id bigint,
+  p_cotizacion numeric,
+  p_moneda text,
+  p_deposito_pesos numeric,
+  p_deposito_usd numeric,
+  p_deposito_euros numeric,
+  p_forma_pago text,
+  p_fecha_cita timestamptz,
+  p_porcentaje_tatuador numeric DEFAULT 0,
+  p_porcentaje_jalador numeric DEFAULT 0,
+  p_porcentaje_gerente numeric DEFAULT 0
+)
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  INSERT INTO appointments (name, telefono, descripcion, gerente_id, tatuador_id, jalador_id, cotizacion, moneda, deposito_pesos, deposito_usd, deposito_euros, forma_pago, fecha_cita, porcentaje_tatuador, porcentaje_jalador, porcentaje_gerente)
+  VALUES (p_name, p_telefono, p_descripcion, p_gerente_id, p_tatuador_id, p_jalador_id, p_cotizacion, p_moneda, p_deposito_pesos, p_deposito_usd, p_deposito_euros, p_forma_pago, p_fecha_cita, p_porcentaje_tatuador, p_porcentaje_jalador, p_porcentaje_gerente);
+END;
+$$;
+
+DROP FUNCTION IF EXISTS update_appointment(bigint, text, text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, timestamptz);
+CREATE OR REPLACE FUNCTION update_appointment(
+  p_id bigint,
+  p_name text,
+  p_telefono text,
+  p_descripcion text,
+  p_gerente_id bigint,
+  p_tatuador_id bigint,
+  p_jalador_id bigint,
+  p_cotizacion numeric,
+  p_moneda text,
+  p_deposito_pesos numeric,
+  p_deposito_usd numeric,
+  p_deposito_euros numeric,
+  p_forma_pago text,
+  p_fecha_cita timestamptz,
+  p_porcentaje_tatuador numeric DEFAULT 0,
+  p_porcentaje_jalador numeric DEFAULT 0,
+  p_porcentaje_gerente numeric DEFAULT 0
+)
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE appointments
+  SET name = p_name,
+      telefono = p_telefono,
+      descripcion = p_descripcion,
+      gerente_id = p_gerente_id,
+      tatuador_id = p_tatuador_id,
+      jalador_id = p_jalador_id,
+      cotizacion = p_cotizacion,
+      moneda = p_moneda,
+      deposito_pesos = p_deposito_pesos,
+      deposito_usd = p_deposito_usd,
+      deposito_euros = p_deposito_euros,
+      forma_pago = p_forma_pago,
+      fecha_cita = p_fecha_cita,
+      porcentaje_tatuador = p_porcentaje_tatuador,
+      porcentaje_jalador = p_porcentaje_jalador,
+      porcentaje_gerente = p_porcentaje_gerente,
+      updated_at = now()
+  WHERE id = p_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION complete_appointment(p_id bigint)
+RETURNS bigint
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+  v_appointment appointments%ROWTYPE;
+  v_turno_id bigint;
+BEGIN
+  SELECT * INTO v_appointment FROM appointments WHERE id = p_id;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+
+  UPDATE appointments SET status = 'concretada', updated_at = now() WHERE id = p_id;
+
+  INSERT INTO turnos (
+    appointment_id, name, telefono, descripcion, gerente_id, tatuador_id, jalador_id,
+    cotizacion, moneda, deposito_pesos, deposito_usd, deposito_euros,
+    forma_pago, pago_pesos, pago_usd, pago_euros, pago_forma_pago,
+    porcentaje_tatuador, porcentaje_jalador, porcentaje_gerente, fecha_cita
+  ) VALUES (
+    v_appointment.id, v_appointment.name, v_appointment.telefono, v_appointment.descripcion,
+    v_appointment.gerente_id, v_appointment.tatuador_id, v_appointment.jalador_id,
+    v_appointment.cotizacion, v_appointment.moneda,
+    v_appointment.deposito_pesos, v_appointment.deposito_usd, v_appointment.deposito_euros,
+    v_appointment.forma_pago,
+    0, 0, 0, 'Efectivo',
+    v_appointment.porcentaje_tatuador, v_appointment.porcentaje_jalador, v_appointment.porcentaje_gerente,
+    v_appointment.fecha_cita
+  )
+  RETURNING id INTO v_turno_id;
+
+  RETURN v_turno_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION create_appointment(text, text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, timestamptz, numeric, numeric, numeric) TO authenticated;
+GRANT EXECUTE ON FUNCTION update_appointment(bigint, text, text, text, bigint, bigint, bigint, numeric, text, numeric, numeric, numeric, text, timestamptz, numeric, numeric, numeric) TO authenticated;
+GRANT EXECUTE ON FUNCTION complete_appointment(bigint) TO authenticated;

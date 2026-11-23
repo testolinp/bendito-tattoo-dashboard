@@ -196,6 +196,7 @@ export default function TurnosTable({
     if (editTurnoId) {
       const turno = turnos.find((t) => t.id === editTurnoId);
       if (turno) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- abre el modal al venir de una cita
         setEditing(turno);
         setFormCotizacion(String(turno.cotizacion ?? ""));
         setFormMoneda(turno.moneda ?? "Pesos");

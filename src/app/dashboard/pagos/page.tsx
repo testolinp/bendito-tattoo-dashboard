@@ -118,6 +118,7 @@ function PagosContent() {
   }, [startISO, endISO]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch async al cambiar el periodo
     fetchData();
   }, [fetchData]);
 

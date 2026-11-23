@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { getSettings, saveSettings, type SiteSettings } from "@/lib/settings-actions";
 
@@ -102,12 +103,17 @@ export default function SettingsPage() {
                 onChange={handleFile}
               />
               {(logoPreview || settings?.sidebar_logo_url) && (
-                <div className="mt-2">
-                  <img
+                <div
+                  className="mt-2 border rounded"
+                  style={{ position: "relative", width: 200, height: 200 }}
+                >
+                  <Image
                     src={logoPreview || settings?.sidebar_logo_url || ""}
                     alt="Logo preview"
-                    className="border rounded"
-                    style={{ width: 200, height: 200, objectFit: "cover" }}
+                    fill
+                    sizes="200px"
+                    unoptimized={!!logoPreview}
+                    style={{ objectFit: "cover" }}
                   />
                 </div>
               )}

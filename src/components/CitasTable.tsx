@@ -150,6 +150,9 @@ export default function CitasTable({
   const [formDepPesos, setFormDepPesos] = useState("");
   const [formDepUsd, setFormDepUsd] = useState("");
   const [formDepEur, setFormDepEur] = useState("");
+  const [formPorcTat, setFormPorcTat] = useState("");
+  const [formPorcJal, setFormPorcJal] = useState("");
+  const [formPorcGer, setFormPorcGer] = useState("");
 
   const editModalRef = useRef<HTMLDivElement>(null);
   const viewModalRef = useRef<HTMLDivElement>(null);
@@ -183,6 +186,9 @@ export default function CitasTable({
     setFormDepPesos("");
     setFormDepUsd("");
     setFormDepEur("");
+    setFormPorcTat("40");
+    setFormPorcJal("10");
+    setFormPorcGer("10");
     setModalOpen(true);
   };
 
@@ -193,6 +199,9 @@ export default function CitasTable({
     setFormDepPesos(String(a.deposito_pesos ?? ""));
     setFormDepUsd(String(a.deposito_usd ?? ""));
     setFormDepEur(String(a.deposito_euros ?? ""));
+    setFormPorcTat(String(a.porcentaje_tatuador ?? ""));
+    setFormPorcJal(String(a.porcentaje_jalador ?? ""));
+    setFormPorcGer(String(a.porcentaje_gerente ?? ""));
     setModalOpen(true);
   };
 
@@ -730,6 +739,78 @@ export default function CitasTable({
                         <option value="Deposito">Cuenta</option>
                       </select>
                     </div>
+                    <div className="col-12">
+                      <hr className="my-2" />
+                      <h6 className="fw-bold mb-2">Comisiones</h6>
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">% Tatuador</label>
+                      <div className="input-group">
+                        <input
+                          name="porcentaje_tatuador"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          className="form-control"
+                          value={formPorcTat}
+                          onChange={(e) => setFormPorcTat(e.target.value)}
+                        />
+                        <span className="input-group-text">%</span>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">% Jalador</label>
+                      <div className="input-group">
+                        <input
+                          name="porcentaje_jalador"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          className="form-control"
+                          value={formPorcJal}
+                          onChange={(e) => setFormPorcJal(e.target.value)}
+                        />
+                        <span className="input-group-text">%</span>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">% Gerente</label>
+                      <div className="input-group">
+                        <input
+                          name="porcentaje_gerente"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          className="form-control"
+                          value={formPorcGer}
+                          onChange={(e) => setFormPorcGer(e.target.value)}
+                        />
+                        <span className="input-group-text">%</span>
+                      </div>
+                    </div>
+                    {(() => {
+                      const porcTat = Number(formPorcTat || 0);
+                      const porcJal = Number(formPorcJal || 0);
+                      const porcGer = Number(formPorcGer || 0);
+                      const suma = porcTat + porcJal + porcGer;
+                      return (
+                        suma > 0 && (
+                          <div className="col-12">
+                            <small
+                              className={
+                                suma <= 100 ? "text-success" : "text-danger"
+                              }
+                            >
+                              Total comisiones: {suma}% · Tienda:{" "}
+                              {Math.max(0, 100 - suma)}%
+                            </small>
+                          </div>
+                        )
+                      );
+                    })()}
                   </div>
                 </div>
                 <div className="modal-footer">
@@ -924,6 +1005,62 @@ export default function CitasTable({
                       <div className="fw-semibold">{viewing.forma_pago}</div>
                     </div>
                   )}
+                  <div className="col-12">
+                    <hr className="my-2" />
+                    <h6 className="fw-bold mb-2">Comisiones</h6>
+                  </div>
+                  {(() => {
+                    const pTat = Number(viewing.porcentaje_tatuador || 0);
+                    const pJal = Number(viewing.porcentaje_jalador || 0);
+                    const pGer = Number(viewing.porcentaje_gerente || 0);
+                    const rate =
+                      viewing.moneda === "USD"
+                        ? 16
+                        : viewing.moneda === "Euros"
+                          ? 19
+                          : 1;
+                    const cotPesos = Number(viewing.cotizacion) * rate;
+                    const totalP = pTat + pJal + pGer;
+                    const shop = cotPesos - (cotPesos * totalP) / 100;
+                    return (
+                      <>
+                        <div className="col-md-4">
+                          <label className="form-label text-muted small">
+                            Tatuador ({pTat}%)
+                          </label>
+                          <div className="fw-semibold">
+                            ${((cotPesos * pTat) / 100).toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="col-md-4">
+                          <label className="form-label text-muted small">
+                            Jalador ({pJal}%)
+                          </label>
+                          <div className="fw-semibold">
+                            ${((cotPesos * pJal) / 100).toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="col-md-4">
+                          <label className="form-label text-muted small">
+                            Gerente ({pGer}%)
+                          </label>
+                          <div className="fw-semibold">
+                            ${((cotPesos * pGer) / 100).toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="col-12">
+                          <small
+                            className={
+                              shop >= 0 ? "text-success" : "text-danger"
+                            }
+                          >
+                            Tienda: ${shop.toFixed(2)} (
+                            {Math.max(0, 100 - totalP)}%)
+                          </small>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="modal-footer">

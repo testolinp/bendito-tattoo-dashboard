@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId } from "react";
+import { useId } from "react";
 import {
   businessToday,
   isDateString,
@@ -17,15 +17,6 @@ export default function PeriodFilter({
   onChange: (range: DateRange) => void;
 }) {
   const id = useId();
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    params.set("from", range.from);
-    params.set("to", range.to);
-    params.delete("period");
-    params.delete("offset");
-    window.history.replaceState(null, "", `?${params.toString()}`);
-  }, [range]);
 
   const update = (next: DateRange) => {
     if (
@@ -59,6 +50,7 @@ export default function PeriodFilter({
           value={range.from}
           max={range.to || undefined}
           onChange={(e) => update({ ...range, from: e.target.value })}
+          suppressHydrationWarning
         />
         <label className="small text-muted mb-0" htmlFor={`${id}-to`}>
           Hasta
@@ -71,6 +63,7 @@ export default function PeriodFilter({
           value={range.to}
           min={range.from || undefined}
           onChange={(e) => update({ ...range, to: e.target.value })}
+          suppressHydrationWarning
         />
       </div>
       <span

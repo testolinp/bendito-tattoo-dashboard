@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   businessToday,
+  isDateString,
   rangeFromParams,
   type DateRange,
 } from "@/lib/datetime-utils";
@@ -44,22 +46,8 @@ function readLocal(): DateRange | null {
   return null;
 }
 
-function readUrl(): DateRange | null {
-  if (typeof window === "undefined") return null;
-  const params = new URLSearchParams(window.location.search);
-  if (
-    !params.has("from") &&
-    !params.has("to") &&
-    !params.has("period") &&
-    !params.has("offset")
-  ) {
-    return null;
-  }
-  return rangeFromParams(params);
-}
-
 function getSnapshot(): DateRange {
-  if (!cache) cache = readUrl() ?? readLocal() ?? defaultRange();
+  if (!cache) cache = readLocal() ?? defaultRange();
   return cache;
 }
 
@@ -89,7 +77,45 @@ function setSharedRange(range: DateRange) {
 }
 
 export function useSharedDateRange() {
-  const range = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const setRange = useCallback((next: DateRange) => setSharedRange(next), []);
+  const searchParams = useSearchParams();
+  const stored = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  const fromParam = searchParams.get("from");
+  const toParam = searchParams.get("to");
+  const periodParam = searchParams.get("period");
+  const offsetParam = searchParams.get("offset");
+  const hasUrlRange =
+    (isDateString(fromParam) && isDateString(toParam)) ||
+    periodParam !== null ||
+    offsetParam !== null;
+  const urlRange = useMemo(() => {
+    if (!hasUrlRange) return null;
+    const params = new URLSearchParams();
+    if (fromParam) params.set("from", fromParam);
+    if (toParam) params.set("to", toParam);
+    if (periodParam) params.set("period", periodParam);
+    if (offsetParam) params.set("offset", offsetParam);
+    return rangeFromParams(params);
+  }, [hasUrlRange, fromParam, toParam, periodParam, offsetParam]);
+  const range = urlRange ?? stored;
+  const urlFrom = urlRange?.from;
+  const urlTo = urlRange?.to;
+
+  useEffect(() => {
+    if (urlFrom && urlTo && (stored.from !== urlFrom || stored.to !== urlTo)) {
+      setSharedRange({ from: urlFrom, to: urlTo });
+    }
+  }, [urlFrom, urlTo, stored.from, stored.to]);
+
+  const setRange = useCallback((next: DateRange) => {
+    setSharedRange(next);
+    const params = new URLSearchParams(window.location.search);
+    params.set("from", next.from);
+    params.set("to", next.to);
+    params.delete("period");
+    params.delete("offset");
+    window.history.replaceState(null, "", `?${params.toString()}`);
+  }, []);
+
   return [range, setRange] as const;
 }

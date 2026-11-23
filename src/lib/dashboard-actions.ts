@@ -143,7 +143,7 @@ export async function getIncomeStats(start: string, end: string) {
     const tatuadorName = extractName(t.tatuador);
     const jaladorName = extractName(t.jalador);
 
-    const addToStaff = (key: string, name: string, role: string, amount: number, pct: number) => {
+    const addToStaff = (key: string, name: string, role: string, amount: number) => {
       if (!name || amount <= 0) return;
       const existing = staffMap.get(key);
       if (existing) {
@@ -152,9 +152,9 @@ export async function getIncomeStats(start: string, end: string) {
       } else staffMap.set(key, { name, role, total: amount, baseAmount: quotePesos });
     };
 
-    addToStaff(`ger_${t.gerente_id}`, gerenteName, "Gerente", mGer, pGer);
-    addToStaff(`tat_${t.tatuador_id}`, tatuadorName, "Tatuador", mTat, pTat);
-    addToStaff(`jal_${t.jalador_id}`, jaladorName, "Jalador", mJal, pJal);
+    addToStaff(`ger_${t.gerente_id}`, gerenteName, "Gerente", mGer);
+    addToStaff(`tat_${t.tatuador_id}`, tatuadorName, "Tatuador", mTat);
+    addToStaff(`jal_${t.jalador_id}`, jaladorName, "Jalador", mJal);
 
     const day = t.fecha_cita.split("T")[0];
     const entry = dayMap.get(day) || {

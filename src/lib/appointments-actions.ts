@@ -20,6 +20,9 @@ export type Appointment = {
   deposito_euros: number;
   forma_pago: string;
   descripcion: string;
+  porcentaje_tatuador: number;
+  porcentaje_jalador: number;
+  porcentaje_gerente: number;
   fecha_cita: string;
   status: string;
 };
@@ -49,6 +52,9 @@ export async function createAppointment(formData: FormData) {
     p_deposito_euros: Number(formData.get("deposito_euros") || 0),
     p_forma_pago: formData.get("forma_pago") as string,
     p_fecha_cita: formData.get("fecha_cita") as string,
+    p_porcentaje_tatuador: Number(formData.get("porcentaje_tatuador") || 0),
+    p_porcentaje_jalador: Number(formData.get("porcentaje_jalador") || 0),
+    p_porcentaje_gerente: Number(formData.get("porcentaje_gerente") || 0),
   });
 
   if (error) return { error: error.message };
@@ -73,6 +79,9 @@ export async function updateAppointment(formData: FormData) {
     p_deposito_euros: Number(formData.get("deposito_euros") || 0),
     p_forma_pago: formData.get("forma_pago") as string,
     p_fecha_cita: formData.get("fecha_cita") as string,
+    p_porcentaje_tatuador: Number(formData.get("porcentaje_tatuador") || 0),
+    p_porcentaje_jalador: Number(formData.get("porcentaje_jalador") || 0),
+    p_porcentaje_gerente: Number(formData.get("porcentaje_gerente") || 0),
   });
 
   if (error) return { error: error.message };

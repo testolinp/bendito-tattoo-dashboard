@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/auth/actions";
@@ -39,11 +40,15 @@ function SidebarBrand({ title, description, logoUrl }: { title: string; descript
   return (
     <div className="d-flex align-items-center gap-2">
       {logoUrl && (
-        <img
-          src={logoUrl}
-          alt={title}
-          style={{ width: 50, height: 50, objectFit: "contain" }}
-        />
+        <div style={{ position: "relative", width: 50, height: 50 }}>
+          <Image
+            src={logoUrl}
+            alt={title}
+            fill
+            sizes="50px"
+            style={{ objectFit: "contain" }}
+          />
+        </div>
       )}
       <div>
         <h5 className="mb-0 sidebar-brand-title">{title}</h5>
@@ -110,7 +115,15 @@ export default function DashboardShell({ children, isAdmin, sidebarTitle = "Bend
       <div className="d-md-none position-fixed top-0 start-0 w-100 bg-dark text-white d-flex align-items-center justify-content-between ps-4 pe-3 py-2" style={{ zIndex: 1050 }}>
         <div className="d-flex align-items-center gap-2">
           {sidebarLogoUrl && (
-            <img src={sidebarLogoUrl} alt={sidebarTitle} style={{ height: 32, width: 32, objectFit: "contain" }} />
+            <div style={{ position: "relative", width: 32, height: 32 }}>
+              <Image
+                src={sidebarLogoUrl}
+                alt={sidebarTitle}
+                fill
+                sizes="32px"
+                style={{ objectFit: "contain" }}
+              />
+            </div>
           )}
           <h6 className="mb-0">{sidebarTitle}</h6>
         </div>

@@ -46,6 +46,7 @@ function DashboardCardsInner() {
   }, [range]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch async al cambiar el periodo
     fetchStats();
   }, [fetchStats]);
 
