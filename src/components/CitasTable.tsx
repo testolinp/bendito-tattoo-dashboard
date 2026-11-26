@@ -165,8 +165,13 @@ export default function CitasTable({
     if (viewing) viewModalRef.current?.focus();
   }, [viewing]);
 
-  const pending = appointments.filter((a) => a.status === "pendiente");
-  const history = appointments.filter(
+  const sortedAppointments = [...appointments].sort((a, b) => {
+    const diff =
+      new Date(b.fecha_cita).getTime() - new Date(a.fecha_cita).getTime();
+    return diff !== 0 ? diff : b.id - a.id;
+  });
+  const pending = sortedAppointments.filter((a) => a.status === "pendiente");
+  const history = sortedAppointments.filter(
     (a) => a.status === "concretada" || a.status === "cancelada",
   );
   const gerenteLabelById = new Map(
